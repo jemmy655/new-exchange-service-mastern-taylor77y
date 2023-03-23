@@ -75,6 +75,7 @@ public interface BalanceService extends IService<Balance> {
     List<MoneyAccount> getRechargeWallet(Integer type);
 
     Response getRechargeConfiguration();
+    Response newGetRechargeConfiguration(String key);
 
     Object currencyExchange(String member, String currency, String currencyTarget, BigDecimal quantity);
 

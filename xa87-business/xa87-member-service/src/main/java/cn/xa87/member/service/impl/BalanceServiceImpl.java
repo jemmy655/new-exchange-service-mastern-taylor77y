@@ -317,9 +317,9 @@ public class BalanceServiceImpl extends ServiceImpl<BalanceMapper, Balance> impl
             throw new BusinessException(AjaxResultEnum.WITHDRAWAL_CHANNEL_IS_TEMPORARILY_CLOSED.getMessage());
         }
 
-        if (balance.compareTo(withdrawMin) == -1) {
-            throw new BusinessException(AjaxResultEnum.WITHDRAWAL_AMOUNT_IS_LESS_THAN_THE_MINIMUM_AMOUNT.getMessage());
-        }
+//        if (balance.compareTo(withdrawMin) == -1) {
+//            throw new BusinessException(AjaxResultEnum.WITHDRAWAL_AMOUNT_IS_LESS_THAN_THE_MINIMUM_AMOUNT.getMessage());
+//        }
         QueryWrapper<Warehouse> wrapWarehouse = new QueryWrapper<Warehouse>();
         wrapWarehouse.eq("member", member);
         List<Warehouse> list = warehouseMapper.selectList(wrapWarehouse);
@@ -608,6 +608,19 @@ public class BalanceServiceImpl extends ServiceImpl<BalanceMapper, Balance> impl
         Dictionaries dictionaries2 = dictionariesMapper.selectOne(wrapper2);
         if(null != dictionaries2) {
             responseMap.put("feeWithdrawal",dictionaries2.getUvalue());
+        }
+        return Response.success(responseMap);
+    }
+
+    @Override
+    public Response newGetRechargeConfiguration(String key) {
+        Map<String,String> responseMap = new HashMap<>();
+
+        QueryWrapper<Dictionaries> wrapper1 = new QueryWrapper<>();
+        wrapper1.eq("ukey", key);
+        Dictionaries dictionaries1 = dictionariesMapper.selectOne(wrapper1);
+        if(null != dictionaries1){
+            responseMap.put("value",dictionaries1.getUvalue());
         }
         return Response.success(responseMap);
     }

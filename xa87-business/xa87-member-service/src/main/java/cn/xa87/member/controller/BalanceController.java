@@ -156,6 +156,13 @@ public class BalanceController {
         return Response.success(balanceService.getRechargeConfiguration());
     }
 
+    @ApiOperation("(新)获取提币手续费接口")
+    @HeaderChecker(headerNames = {"token", "userId"})
+    @GetMapping(value = "/new/getRechargeConfiguration")
+    public Response newGetRechargeConfiguration(@RequestParam(value = "key")String key) {
+        return Response.success(balanceService.newGetRechargeConfiguration(key));
+    }
+
 
     @ApiOperation("币币兑换")
     @HeaderChecker(headerNames = {"token", "userId"})
