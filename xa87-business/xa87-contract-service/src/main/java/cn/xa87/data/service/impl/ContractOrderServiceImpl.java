@@ -343,6 +343,7 @@ public class ContractOrderServiceImpl extends ServiceImpl<ContractOrderMapper, C
         if (contractOrder==null){
            return contractOrderNewVO;
         }
+        //git
         contractOrderNewVO.setOrderId(contractOrder.getId());
         contractOrderNewVO.setOrderType(contractOrder.getOrderType());
         contractOrderNewVO.setCreateTime(contractOrder.getCreateTime());
