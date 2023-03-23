@@ -17,7 +17,7 @@ spring:
     nacos:
       discovery:
         server-addr: 127.0.0.1:8848
-        namespace: 8dfa2159-fda6-4be1-b649-58db1a473a0f
+        namespace: 8dfa2159-fda6-4be1-b649-58db1a473a0f #更改自己本地nacos
       config:
         file-extension: yml
         shared-dataids: application-${spring.profiles}.yml
