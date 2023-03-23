@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xa87.member.mapper.PairsMapper">
+
+    <select id="selectPairByCoin" resultType="cn.xa87.model.Pairs">
+        select * from t_pairs where token_cur = #{token}
+    </select>
+
+</mapper>

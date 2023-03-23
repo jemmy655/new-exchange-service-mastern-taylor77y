@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xa87.job.mapper.WarehouseMapper">
+
+    <update id="updateOrder1">
+ 	update t_warehouse as tw set tw.un_profit_loss=(${price}-tw.ave_price)*tw.hands*(select contract_mul from t_contract_mul where pairs_name =#{pairsName}),
+ 	tw.profit_up=(${price}-tw.ave_price)*tw.avg_level/tw.ave_price
+ 	where tw.trade_type='OPEN_UP' and tw.pairs_name=#{pairsName};
+ </update>
+    <update id="updateOrder2">
+ 	update t_warehouse as tw set tw.un_profit_loss=(tw.ave_price-${price})*tw.hands*(select contract_mul from t_contract_mul where pairs_name =#{pairsName}),
+ 	tw.profit_up=(tw.ave_price-${price})*tw.avg_level/tw.ave_price 
+ 	where tw.trade_type='OPEN_DOWN' and tw.pairs_name=#{pairsName}
+ </update>
+    <select id="getDisMember" resultType="String">
+  	select distinct member from t_warehouse
+  </select>
+</mapper>

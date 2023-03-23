@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xa87.data.mapper.BalanceMapper">
+
+    <select id="getSumBalance" resultType="java.util.Map">
+  	select sum(assets_balance) as assets_balance,sum(assets_blocked_balance) as assets_blocked_balance from t_balance where user_id=#{member}
+  </select>
+
+    <select id="getSumTokenPrice" resultType="java.math.BigDecimal">
+  	select sum(token_price) as token_price from t_warehouse where member=#{member}
+  </select>
+
+</mapper>

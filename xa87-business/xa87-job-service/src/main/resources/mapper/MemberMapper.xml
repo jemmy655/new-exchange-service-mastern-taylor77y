@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xa87.job.mapper.MemberMapper">
+    <update id="updateBrokerage">
+        <foreach collection="list" index="index" item="item" open="" separator=";" close="">
+            UPDATE t_member
+            SET brokerage = (CASE WHEN brokerage + #{item.number} &lt; #{brokerageUpper} THEN brokerage + #{item.number}
+            ELSE #{brokerageUpper} END)
+            WHERE id = #{item.brokerageUserId}
+        </foreach>
+    </update>
+</mapper>

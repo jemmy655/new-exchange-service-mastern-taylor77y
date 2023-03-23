@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xa87.data.mapper.SysConfigMapper">
+    <select id="selectByParamKey" parameterType="String" resultType="string">
+        select param_value from t_sys_config where param_key = #{paramKey}  LIMIT 1
+    </select>
+</mapper>

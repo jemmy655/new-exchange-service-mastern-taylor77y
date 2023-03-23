@@ -1,0 +1,10 @@
+package cn.xa87.data.mapper;
+
+import cn.xa87.model.Pairs;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
+import java.util.List;
+
+public interface PairsMapper extends BaseMapper<Pairs> {
+    List<String> getMainCurs();
+}

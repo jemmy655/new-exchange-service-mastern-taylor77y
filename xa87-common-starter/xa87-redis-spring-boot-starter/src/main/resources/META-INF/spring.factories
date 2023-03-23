@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+cn.xa87.common.redis.Xa87RedisAutoConfigure,\
+cn.xa87.common.redis.limit.config.RedisLimitAutoConfigurer

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xa87.member.mapper.BalanceMapper">
+    <update id="addBalance">
+        UPDATE t_balance SET assets_balance = assets_balance + #{addNum} WHERE user_id = #{memberId} AND currency = #{coinName}
+    </update>
+
+    <update id="lessBalance">
+        UPDATE t_balance SET assets_balance = assets_balance - #{lessNum} WHERE user_id = #{memberId} AND currency = #{currency}
+    </update>
+
+
+    <select id="getBalanceList" resultType="cn.xa87.model.Balance">
+        SELECT
+            tb.*
+        FROM t_balance tb
+        left join t_pairs tp on tp.token_cur = tb.currency
+        WHERE tb.user_id = #{userId}
+        <if test="currency != null and currency != ''">
+            and tb.currency = #{currency}
+        </if>
+        <if test="coinType != null and coinType != ''">
+            <if test="coinType == 'SPOT'">
+                and tb.currency in (select token_cur from t_pairs where trade_type like '%SPOT%')
+            </if>
+            <if test="coinType == 'CONTRACT'">
+                and tb.currency in (select token_cur from t_pairs where trade_type like '%CONTRACT%')
+            </if>
+            <if test="coinType == 'FB'">
+                and tb.currency in (select token_cur from t_pairs where trade_type like '%SPOT%')
+            </if>
+            <if test="coinType == 'ASSETS'">
+                and tb.currency in (select token_cur from t_pairs where trade_type like '%SPOT%')
+            </if>
+            <if test="coinType == 'RELEASE'">
+                and tb.currency in (select token_cur from t_pairs where trade_type like '%SPOT%')
+            </if>
+        </if>
+        ORDER BY tp.sort DESC
+    </select>
+    <select id="getBalanceMainList" resultType="cn.xa87.model.Balance">
+        SELECT
+        *
+        FROM t_balance
+        WHERE user_id = #{userId}
+        <if test="currency != null and currency != ''">
+            and currency = #{currency}
+        </if>
+        and currency in(select distinct main_cur from t_pairs )
+    </select>
+
+</mapper>

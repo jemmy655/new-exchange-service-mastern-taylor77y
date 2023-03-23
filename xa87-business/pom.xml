@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>xa87</artifactId>
+        <groupId>cn.xa87</groupId>
+        <version>1.0.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <packaging>pom</packaging>
+    <modules>
+        <module>xa87-job-service</module>
+        <module>xa87-data-service</module>
+        <module>xa87-member-service</module>
+        <module>xa87-socket-service</module>
+        <module>xa87-rabbitmq-consumer</module>
+        <module>xa87-contract-service</module>
+        <module>xa87-entrust-service</module>
+        <module>xa87-entrust-consumer</module>
+        <module>xa87-otc-service</module>
+        <module>xa87-wallet-service</module>
+<!--        <module>xa87-socket-client</module>-->
+    </modules>
+    <artifactId>xa87-business</artifactId>
+    <name>xa87-business</name>
+
+</project>

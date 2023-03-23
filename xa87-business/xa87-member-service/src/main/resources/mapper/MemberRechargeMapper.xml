@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xa87.member.mapper.MemberRechargeMapper">
+
+    <select id="rechargeCurrencyRecord" resultType="cn.xa87.model.MemberRecharge">
+        SELECT
+            t.*
+        FROM t_member_recharge t
+        WHERE t.member_id = #{memberId}
+        <if test="currency != null and currency != ''">
+            AND t.currency = #{currency}
+        </if>
+        ORDER BY t.create_time DESC
+    </select>
+</mapper>

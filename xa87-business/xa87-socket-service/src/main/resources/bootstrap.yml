@@ -1,0 +1,40 @@
+server:
+  port: 8780
+
+spring:
+  application:
+    name: xa87-socket-service
+  profiles:
+    active: show
+
+logging:
+  level:
+    root: info
+    com.github.tobato: info
+
+---
+spring:
+  profiles: dev
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        namespace: 8dfa2159-fda6-4be1-b649-58db1a473a0f
+      config:
+        file-extension: yml
+        shared-dataids: application-${spring.profiles}.yml
+        server-addr: 127.0.0.1:8848
+        namespace: 8dfa2159-fda6-4be1-b649-58db1a473a0f
+---
+spring:
+  profiles: show
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        namespace: 8dfa2159-fda6-4be1-b649-58db1a473a0f
+      config:
+        server-addr: 127.0.0.1:8848
+        file-extension: yml
+        shared-dataids: application-${spring.profiles}.yml
+        namespace: 8dfa2159-fda6-4be1-b649-58db1a473a0f

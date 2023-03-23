@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xa87.member.mapper.MemberMapper">
+
+    <select id="selectInviteNumber" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM t_member
+        WHERE wel_member = #{memberId}
+    </select>
+
+    <select id="verify" resultType="cn.xa87.vo.php.MemberVo">
+        SELECT
+        m1.id AS id,
+        IFNULL(m1.phone,'') AS phone,
+        IFNULL(m1.mail,'') AS mail,
+        m1.wel_code AS welCode,
+        m1.quick_mark AS quickMark,
+        m1.create_time AS createTime,
+        IFNULL(m2.id,'') AS superiorNumber
+        FROM t_member m1
+        LEFT JOIN t_member m2 ON m1.wel_member = m2.id
+        WHERE m1.uuid = #{uuid}
+        <if test="phone != null and phone != ''">
+            and m1.phone = #{phone}
+        </if>
+        <if test="mail != null and mail != ''">
+            and m1.mail = #{mail}
+        </if>
+    </select>
+
+    <select id="selectSubordinateMember" resultType="cn.xa87.vo.php.SubordinateMemberVo">
+        SELECT
+        IFNULL(m1.phone,m1.mail) AS myselfNumber,
+        m1.uuid,
+        m1.create_time AS createTime,
+        IFNULL(IFNULL(m2.phone,m2.mail),'') AS superiorNumber,
+        IFNULL((SELECT SUM(fee) FROM t_forward_info WHERE status = '1' AND currency = #{currency} AND member_id =
+        m1.id),'0') AS rechargeFee,
+        IFNULL((SELECT SUM(balance) FROM t_extract_coin WHERE state = 'PASS' AND currency = #{currency} AND member =
+        m1.id),'0') AS extractFee
+        FROM t_member m1
+        LEFT JOIN t_member m2 ON m1.wel_member = m2.id
+        WHERE m1.node_path LIKE CONCAT(#{nodePath},'%')
+        <if test="myselfPhone != null and myselfPhone != ''">
+            AND m1.phone = #{myselfPhone}
+        </if>
+        <if test="myselfMail != null and myselfMail != ''">
+            AND m1.mail = #{myselfMail}
+        </if>
+        <if test="superiorPhone != null and superiorPhone != ''">
+            AND m2.phone = #{superiorPhone}
+        </if>
+        <if test="superiorMail != null and superiorMail != ''">
+            AND m2.mail = #{superiorMail}
+        </if>
+    </select>
+
+    <select id="selectBrokerManagement" resultType="cn.xa87.vo.php.BrokerManagementVo">
+        SELECT
+        IFNULL(m1.phone,m1.mail) AS myselfNumber,
+        IFNULL(IFNULL(m2.phone,m2.mail),'') AS superiorNumber
+        FROM t_member m1
+        LEFT JOIN t_member m2 ON m1.wel_member = m2.id
+        WHERE m1.node_path LIKE CONCAT(#{nodePath},'%')
+        <if test="myselfPhone != null and myselfPhone != ''">
+            AND m1.phone = #{myselfPhone}
+        </if>
+        <if test="myselfMail != null and myselfMail != ''">
+            AND m1.mail = #{myselfMail}
+        </if>
+        <if test="superiorPhone != null and superiorPhone != ''">
+            AND m2.phone = #{superiorPhone}
+        </if>
+        <if test="superiorMail != null and superiorMail != ''">
+            AND m2.mail = #{superiorMail}
+        </if>
+    </select>
+
+    <select id="getOrderList" resultType="cn.xa87.vo.php.BrokerOrderVo">
+        SELECT
+        co.id AS orderId,
+        IFNULL(m.phone,m.mail) AS number,
+        co.trade_type AS orderType,
+        co.order_state AS orderStatus,
+        co.price AS price,
+        co.match_price AS closingPrice,
+        co.match_fee AS profitLoss,
+        (co.take_fee + co.take_fee) AS handlingFee,
+        co.contract_hands AS trouble,
+        co.lever_num AS leverNum,
+        co.create_time AS createTime,
+        co.update_time AS updateTime
+        FROM t_contract_order co
+        LEFT JOIN t_member m ON co.member = m.id
+        WHERE co.main_cur = #{currency}
+        AND m.node_path LIKE CONCAT(#{nodePath},'%')
+        <if test="phone != null and phone != ''">
+            AND m.phone = #{phone}
+        </if>
+        <if test="mail != null and mail != ''">
+            AND m.mail = #{mail}
+        </if>
+        <if test="dto.orderType != null and dto.orderType != ''">
+            AND co.trade_type = #{dto.orderType}
+        </if>
+        <if test="dto.orderStatus != null and dto.orderStatus != ''">
+            AND co.order_state = #{dto.orderStatus}
+        </if>
+        <if test="dto.createTimeBegin != null and dto.createTimeBegin != ''">
+            AND DATE_FORMAT(co.create_time,'%Y-%m-%d %H:%i:%S') &gt;= #{dto.createTimeBegin}
+        </if>
+        <if test="dto.createTimeEnd != null and dto.createTimeEnd != ''">
+            AND DATE_FORMAT(co.create_time,'%Y-%m-%d %H:%i:%S') &lt;= #{dto.createTimeEnd}
+        </if>
+        <if test="dto.closeOutTimeBegin != null and dto.closeOutTimeBegin != ''">
+            AND DATE_FORMAT(co.update_time,'%Y-%m-%d %H:%i:%S') &gt;= #{dto.closeOutTimeBegin}
+        </if>
+        <if test="dto.closeOutTimeEnd != null and dto.closeOutTimeEnd != ''">
+            AND DATE_FORMAT(co.update_time,'%Y-%m-%d %H:%i:%S') &lt;= #{dto.closeOutTimeEnd}
+        </if>
+    </select>
+
+    <select id="getSettlementList" resultType="cn.xa87.vo.php.SettlementVo">
+        SELECT
+        tcos.order_id AS orderId,
+        IFNULL(tm.phone,tm.mail) AS number,
+        tcos.order_state AS orderStatus,
+        tcos.change_fee AS contribution,
+        tcos.balance AS initialBalance,
+        tcos.state AS state,
+        tcos.update_time AS updateTime
+        FROM t_contract_order_settlement tcos
+        LEFT JOIN t_member tm ON tcos.member_id = tm.id
+        WHERE tcos.currency = #{currency}
+        AND tcos.order_state = #{orderStatus}
+        AND tm.node_path LIKE CONCAT(#{nodePath},'%')
+        <if test="phone != null and phone != ''">
+            AND tm.phone = #{phone}
+        </if>
+        <if test="mail != null and mail != ''">
+            AND tm.mail = #{mail}
+        </if>
+        <if test="dto.state != null">
+            AND tcos.state = #{dto.state}
+        </if>
+        <if test="dto.beginTime != null and dto.beginTime != ''">
+            AND DATE_FORMAT(tcos.update_time,'%Y-%m-%d %H:%i:%S') &gt;= #{dto.beginTime}
+        </if>
+        <if test="dto.endTime != null and dto.endTime != ''">
+            AND DATE_FORMAT(tcos.update_time,'%Y-%m-%d %H:%i:%S') &lt;= #{dto.endTime}
+        </if>
+    </select>
+
+    <select id="selectOverview" resultType="java.lang.String">
+        SELECT id FROM t_member WHERE node_path LIKE CONCAT(#{nodePath},'%')
+    </select>
+
+    <update id="updateBrokerGrade">
+        UPDATE
+        t_member
+        SET ${column} = #{memberId}
+        WHERE node_path LIKE CONCAT(#{nodePath},'%')
+        AND ${column} IN
+        <foreach collection="list" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+</mapper>

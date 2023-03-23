@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xa87.rabbit.mapper.ContractOrderMapper">
+
+    <update id="updateOrderState">
+ 	update t_contract_order as torder set torder.order_state='FINAL',torder.close_type='BURST',torder.match_price=(select price from t_pairs where pairs_name=torder.pairs_name) where member=#{member} and order_state='CREATE'
+ </update>
+
+</mapper>

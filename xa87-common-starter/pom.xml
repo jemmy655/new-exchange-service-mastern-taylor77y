@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>xa87</artifactId>
+        <groupId>cn.xa87</groupId>
+        <version>1.0.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>xa87-common-starter</artifactId>
+    <packaging>pom</packaging>
+    <name>xa87-common-starter</name>
+
+    <modules>
+        <module>xa87-common-spring-boot-starter</module>
+        <module>xa87-feign-spring-boot-starter</module>
+        <module>xa87-log-spring-boot-starter</module>
+        <module>xa87-redis-spring-boot-starter</module>
+        <module>xa87-ribbon-spring-boot-starter</module>
+        <module>xa87-swagger2-spring-boot-starter</module>
+        <module>xa87-business-o2o-model</module>
+    </modules>
+
+
+</project>

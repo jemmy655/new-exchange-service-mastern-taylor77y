@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xa87.member.mapper.ExtractCoinMapper">
+    <select id="selectExtractRecording" resultType="cn.xa87.vo.ExtractCoinVo">
+        SELECT
+        currency,
+        balance,
+        state,
+        hex,
+        wallet,
+        handling_fee as handlingFee,
+        update_time AS extractTime,
+        `type`,
+        chain_name AS chainName,
+        bank_user_name AS bankUserName,
+        bank_name AS bankName,
+        bank_address AS bankAddress,
+        bank_card AS bankCard,
+        exchange_rate AS exchangeRate,
+        amount,
+        currency_symbol AS currencySymbol
+        FROM t_extract_coin
+        WHERE member = #{memberId}
+        <if test="state != null and state != ''">
+            AND state = #{state}
+        </if>
+        <if test="currency != null and currency != ''">
+            AND currency = #{currency}
+        </if>
+        ORDER BY update_time DESC
+    </select>
+
+    <select id="selectWithdrawCurrency" resultType="java.lang.String">
+        SELECT
+        currency
+        FROM t_extract_coin
+        WHERE member = #{memberId}
+    </select>
+
+    <select id="selectTotalFee" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(balance),'0')
+        FROM t_extract_coin
+        WHERE state = 'PASS'
+        AND currency = #{currency}
+        AND member IN
+        <foreach collection="list" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+</mapper>

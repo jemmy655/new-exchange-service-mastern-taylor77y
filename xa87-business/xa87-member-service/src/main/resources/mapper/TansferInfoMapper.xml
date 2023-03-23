@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.xa87.member.mapper.TansferInfoMapper">
+    <select id="selectDeal" resultType="cn.xa87.vo.php.DealVo">
+        SELECT
+        IFNULL(m.phone,m.mail) AS number,
+        ti.member AS memberId,
+        ti.balance AS usdtBalance,
+        ti.type AS transferType,
+        ti.fee AS fee,
+        ti.create_time AS createTime
+        FROM t_transfer_info ti
+        LEFT JOIN t_member m ON ti.member = m.id
+        WHERE ti.currency = 'USDT'
+        AND m.node_path LIKE CONCAT(#{nodePath},'%')
+        <choose>
+            <when test="phone != null and phone != ''">
+                AND m.phone = #{phone}
+            </when>
+            <when test="mail != null and mail != ''">
+                AND m.mail = #{mail}
+            </when>
+        </choose>
+        <choose>
+            <when test="transferType != null and transferType != ''">
+                AND ti.type = #{transferType}
+            </when>
+            <otherwise>
+                AND ti.type IN('BALANCE_MOVE_TOKEN','TOKEN_MOVE_BALANCE')
+            </otherwise>
+        </choose>
+        <if test="createTimeBegin != null and createTimeBegin != ''">
+            AND DATE_FORMAT(ti.create_time,'%Y-%m-%d %H:%i:%S') &gt;= #{createTimeBegin}
+        </if>
+        <if test="createTimeEnd != null and createTimeEnd != ''">
+            AND DATE_FORMAT(ti.create_time,'%Y-%m-%d %H:%i:%S') &lt;= #{createTimeEnd}
+        </if>
+    </select>
+</mapper>
