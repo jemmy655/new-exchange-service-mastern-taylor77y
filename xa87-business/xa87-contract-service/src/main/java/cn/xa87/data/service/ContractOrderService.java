@@ -48,4 +48,6 @@ public interface ContractOrderService extends IService<ContractOrder> {
     Response getSecondContractRecord(String member,Integer type, Integer pageNum, Integer pageSize);
 
     SecondsBetLog getSecondContract(Integer secondId);
+
+    boolean setContractOrderNew(ContractOrder contractOrder);
 }

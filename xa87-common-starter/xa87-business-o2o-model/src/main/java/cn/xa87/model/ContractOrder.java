@@ -157,11 +157,14 @@ public class ContractOrder extends Model<ContractOrder> {
     private Date updateTime;
 
 
+<<<<<<< HEAD
+=======
     @TableField(exist = false)
     private BigDecimal KPrice;//开仓金额   每手乘以1000
 
     @TableField(exist = false)
     private BigDecimal BPrice;//可平金额   每手乘以1000
+>>>>>>> de609c8ce52a747fde26c48d1c77b58b2790b03b
 
     @Override
     protected Serializable pkVal() {
