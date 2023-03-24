@@ -4,7 +4,6 @@ import cn.xa87.common.web.Response;
 import cn.xa87.constant.TokenOrderConstant;
 import cn.xa87.model.PerpetualContractOrder;
 import cn.xa87.vo.PerpetualContractOrderVO;
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
@@ -16,9 +15,9 @@ public interface PerpetualContractOrderService extends IService<PerpetualContrac
 
     Map<Object,Object> getContractOrder(String id);
 
-    boolean setOrderMatch(String id);
+    boolean setOrderMatch(String id, String coinName,String price);
 
-    boolean setAllContractMatch(String member, String pairsName);
+    boolean setAllContractMatch(String member, String pairsName, String name, String price);
 
     List<Object> getWarehouses(String member, String pairsName, String price);
 

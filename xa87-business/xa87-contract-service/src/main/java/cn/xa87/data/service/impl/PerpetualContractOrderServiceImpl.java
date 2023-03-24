@@ -6,7 +6,6 @@ import cn.xa87.common.redis.lock.RedisDistributedLock;
 import cn.xa87.common.redis.template.Xa87RedisRepository;
 import cn.xa87.common.web.Response;
 import cn.xa87.constant.AjaxResultEnum;
-import cn.xa87.constant.ContractConstant;
 import cn.xa87.constant.TokenOrderConstant;
 import cn.xa87.data.mapper.*;
 import cn.xa87.data.service.PerpetualContractOrderService;
@@ -16,9 +15,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import io.swagger.models.auth.In;
-import org.apache.commons.lang3.StringUtils;
-import org.checkerframework.checker.units.qual.A;
+import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +24,6 @@ import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualContractOrderMapper, PerpetualContractOrder>
@@ -111,12 +107,55 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
     }
 
     @Override
-    public boolean setOrderMatch(String id) {
+    public boolean setOrderMatch(String id, String coinName,String price) {
+        PerpetualContractOrderVO vo=new PerpetualContractOrderVO();
+        QueryWrapper<PerpetualContractOrder> wrapperMain = new QueryWrapper<PerpetualContractOrder>();
+        wrapperMain.eq("id", id);
+        PerpetualContractOrder balanceMain = perpetualContractOrderMapper.selectOne(wrapperMain);
+        if (balanceMain==null){
+            throw new BusinessException("为空");
+        }
+
+        vo.setCoinName(coinName);
+        vo.setMemberId(balanceMain.getMemberId());
+        vo.setMargin(balanceMain.getMargin());
+        //退回金额
+        //修改状态为已平仓 ClLOSEOUT
+        BigDecimal margin= balanceMain.getAmount().add(balanceMain.getProfit());//扣除金额
+        updateBalance(vo,margin);
+        balanceMain.setOrderState("ClLOSEOUT");
+        balanceMain.setMargin(new BigDecimal(0.00000));//保证金减少并且为0
+        balanceMain.setBPrice(new BigDecimal(price));//结束价格
+        balanceMain.setUsableControlHands(new BigDecimal(0));
+        balanceMain.setSettleTime(new Date());
+        perpetualContractOrderMapper.updateById(balanceMain);
         return true;
     }
 
     @Override
-    public boolean setAllContractMatch(String member, String pairsName) {
+    public boolean setAllContractMatch(String memberId, String coinName, String pairsName,String price) {
+        QueryWrapper<PerpetualContractOrder> wrapperMain = new QueryWrapper<PerpetualContractOrder>();
+        wrapperMain.eq("pairs_name", pairsName);
+        wrapperMain.eq("order_state", "POSITIONS"); //状态为持仓
+        wrapperMain.eq("member_id", memberId);
+        List<PerpetualContractOrder> balanceMain = perpetualContractOrderMapper.selectList(wrapperMain);
+        for (PerpetualContractOrder b:balanceMain) {
+            PerpetualContractOrderVO vo=new PerpetualContractOrderVO();
+            //退回金额
+            vo.setCoinName(coinName);
+            vo.setMemberId(b.getMemberId());
+            vo.setMargin(b.getMargin());
+            //退回金额
+            //修改状态为已平仓 ClLOSEOUT
+            BigDecimal margin= b.getAmount().add(b.getProfit());//扣除金额
+            updateBalance(vo,margin);
+            b.setOrderState("ClLOSEOUT");
+            b.setMargin(new BigDecimal(0.00000));//保证金减少并且为0
+            b.setBPrice(new BigDecimal(price));//结束价格
+            b.setUsableControlHands(new BigDecimal(0));
+            b.setSettleTime(new Date());
+            perpetualContractOrderMapper.updateById(b);
+        }
         return true;
     }
 
@@ -167,7 +206,25 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
 
     @Override
     public Response getHistoryOrders(String member, String pairsName, TokenOrderConstant.Order_State orderState, Integer pageNum, Integer pageSize) {
-        return null;
+        List<Object> list=new LinkedList<>();
+        DecimalFormat df = new DecimalFormat("0.00%");
+        QueryWrapper<PerpetualContractOrder> wrapperMain = new QueryWrapper<PerpetualContractOrder>();
+        wrapperMain.eq("pairs_name", pairsName);
+        wrapperMain.eq("order_state", "ClLOSEOUT"); //状态为持仓
+        wrapperMain.eq("member_id", member);
+        wrapperMain.orderByDesc("create_time");
+        List<PerpetualContractOrder> balanceMain = perpetualContractOrderMapper.selectList(wrapperMain);
+        for (PerpetualContractOrder b:balanceMain) {
+            Map<Object,Object> map = JSON.parseObject(JSON.toJSONString(b), Map.class);
+
+            if (b.getProfit().compareTo(new BigDecimal(0.00))==1) {
+                map.put("profitUp",df.format(b.getProfit().divide(b.getAmount())));
+            } else {
+                map.put("profitUp","0.00");
+            }
+            list.add(map);
+        }
+        return Response.success(list);
     }
 
     @Override
@@ -192,11 +249,13 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
                 //退回金额
                 perpetualContractOrder.getContractHands().subtract(per.getContractHands());//减少手数
                 //修改状态为已平仓 ClLOSEOUT
-                BigDecimal margin= perpetualContractOrder.getAmount().add(per.getProfit());//扣除金额
+                BigDecimal margin= per.getAmount().add(per.getProfit());//扣除金额
                 updateBalance(perpetualContractOrder,margin);
                 per.setOrderState("ClLOSEOUT");
+                per.setMargin(new BigDecimal(0.00000));//保证金减少并且为0
                 per.setBPrice(perpetualContractOrder.getKPrice());//结束价格
                 per.setUsableControlHands(new BigDecimal(0));
+                per.setSettleTime(new Date());
                 perpetualContractOrderMapper.updateById(per);
                 break;
             }
@@ -205,11 +264,13 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
                 //退回金额
                 perpetualContractOrder.getContractHands().subtract(per.getContractHands());//减少手数
                 //修改状态为已平仓 ClLOSEOUT
-                BigDecimal a=per.getContractHands().multiply(new BigDecimal(1000));//要减少的金额
+                BigDecimal a=perpetualContractOrder.getContractHands().multiply(new BigDecimal(1000));//要减少的金额
+
                 updateBalance(perpetualContractOrder,a);//还有持仓手数 不减少 收益
 
                 per.setBPrice(perpetualContractOrder.getKPrice());
                 per.setUsableControlHands(perpetualContractOrder.getContractHands().subtract(per.getUsableControlHands()));
+                per.setSettleTime(new Date());
                 perpetualContractOrderMapper.updateById(per);
                 break;
             }
@@ -221,7 +282,9 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
                 updateBalance(perpetualContractOrder,margin);//还有持仓手数 不减少 收益
                 per.setOrderState("ClLOSEOUT");
                 per.setBPrice(perpetualContractOrder.getKPrice());
+                per.setMargin(new BigDecimal(0.00000));//保证金减少并且为0
                 per.setUsableControlHands(new BigDecimal(0));
+                per.setSettleTime(new Date());
                 perpetualContractOrderMapper.updateById(per);
             }
         }

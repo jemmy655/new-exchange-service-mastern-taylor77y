@@ -47,16 +47,16 @@ public class PerpetualContractOrderController {
     @HeaderChecker(headerNames = {"token", "userId"})
     @PostMapping(value = "/setOrderMatch")
     //@LogHeaderChecker
-    public Response setOrderMatch(@RequestParam String id) {
-        return Response.success(perpetualContractOrderService.setOrderMatch(id));
+    public Response setOrderMatch(@RequestParam String id,@RequestParam String coinName,@RequestParam String price) {
+        return Response.success(perpetualContractOrderService.setOrderMatch(id,coinName, price));
     }
 
     @ApiOperation("一键平仓")
     @HeaderChecker(headerNames = {"token", "userId"})
     @PostMapping(value = "/setAllContractMatch")
    // @LogHeaderChecker
-    public Response setAllContractMatch(@RequestParam String memberId, String pairsName) {
-        return Response.success(perpetualContractOrderService.setAllContractMatch(memberId, pairsName));
+    public Response setAllContractMatch(@RequestParam String memberId, @RequestParam String coinName, @RequestParam String pairsName,@RequestParam String price) {
+        return Response.success(perpetualContractOrderService.setAllContractMatch(memberId, coinName,pairsName,price));
     }
 
 
