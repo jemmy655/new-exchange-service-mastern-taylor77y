@@ -153,6 +153,8 @@ public class ContractOrder extends Model<ContractOrder> {
     @TableField("update_time")
     private Date updateTime;
 
+
+
     @Override
     protected Serializable pkVal() {
         return this.id;

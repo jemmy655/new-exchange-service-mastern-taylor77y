@@ -63,118 +63,215 @@ public class ContractOrderServiceImpl extends ServiceImpl<ContractOrderMapper, C
 
 
     public boolean setContractOrderNew(ContractOrder contractOrder) {
-        BigDecimal nowPrice=contractOrder.getPrice();
-        // 判读交易对后台是否配置
-        ContractMul contractMul = contractMulMapper.selectById(contractOrder.getContractMulId());
-        if (!contractMul.getPairsName().equals(contractOrder.getPairsName())) {
-            throw new BusinessException(AjaxResultEnum.TRADING_PAIR_ERROR.getMessage());
+        if (contractOrder.getContractHands().doubleValue() <= 0) {
+            throw new BusinessException(AjaxResultEnum.LEVERAGE_MUST_BE_GREATER.getMessage());
         }
-        // 合约乘数 * 杠杆手数
-        BigDecimal coinNum = contractMul.getContractMul().multiply(contractOrder.getContractHands());
-        // 杠杆倍数
-        Lever lever = leverMapper.selectById(contractOrder.getLeverId());
-        // 保证金 = 合约乘数 * （杠杆手数 * 币价格）
-        BigDecimal sumPrice = contractMul.getContractMul().multiply(contractOrder.getContractHands().multiply(new BigDecimal(1000)));
-
-        // 资金扣除
-        BigDecimal takeFee = openBalance(contractOrder, contractMul, sumPrice);
-
-        contractOrder.setCoinNum(coinNum);
-        contractOrder.setMargin(sumPrice);
-        contractOrder.setMatchPrice(new BigDecimal(00.000));// 状态
-        contractOrder.setOrderState(TokenOrderConstant.Order_State.CREATE);
-        contractOrder.setLeverNum(lever.getLever());
-        contractOrder.setLeverDesc(lever.getLeverDesc());
-        contractOrder.setIsContractHands(contractOrder.getContractHands());
-        contractOrder.setTakeFee(takeFee);
-        contractOrder.setMatchFee(new BigDecimal(00.000));
-        contractOrder.setOrderType(TokenOrderConstant.Order_Type.POSITIONS);
-        contractOrderMapper.insert(contractOrder);
-
-
-
-        QueryWrapper<Warehouse> wrapperWarehouse = new QueryWrapper<Warehouse>();
-        wrapperWarehouse.eq("pairs_name", contractOrder.getPairsName());
-        wrapperWarehouse.eq("member", contractOrder.getMember());
-        wrapperWarehouse.eq("trade_type", contractOrder.getTradeType());
-        wrapperWarehouse.eq("state", TokenOrderConstant.Order_State.CREATE);
-        Warehouse warehouse = warehouseMapper.selectOne(wrapperWarehouse);
-        if (warehouse == null) {
-            // 个人组合订单
-            warehouse = new Warehouse();
+        if (Strings.isBlank(contractOrder.getPairsName())) {
+            //throw new BusinessException("交易对不允许为空");
+            throw new BusinessException(AjaxResultEnum.PARAMETER_IS_EMPTY.getMessage());
         }
-        warehouse.setState(TokenOrderConstant.Order_State.CREATE);
-        warehouse.setPairsName(contractOrder.getPairsName());
-        warehouse.setCoinName(contractOrder.getCoinName());
-        warehouse.setMainCur(contractOrder.getMainCur());
-        warehouse.setTradeType(contractOrder.getTradeType());
-        // 持仓均价
-        QueryWrapper<ContractOrder> wrapperOrder = new QueryWrapper<ContractOrder>();
-        wrapperOrder.eq("pairs_name", contractOrder.getPairsName());
-        wrapperOrder.eq("member", contractOrder.getMember());
-        wrapperOrder.eq("trade_type", contractOrder.getTradeType());
-        wrapperOrder.ne("order_state", TokenOrderConstant.Order_State.FINAL);
-        wrapperOrder.eq("order_type", TokenOrderConstant.Order_Type.POSITIONS);
-        List<ContractOrder> contractOrders = contractOrderMapper.selectList(wrapperOrder);
-        BigDecimal sumTokenPrice = new BigDecimal("0");
-        BigDecimal sumHands = new BigDecimal("0");
-        BigDecimal levers = new BigDecimal("0");
-        BigDecimal sumMargin = new BigDecimal("0");
-        for (ContractOrder contractOrderInfo : contractOrders) {
-            sumTokenPrice = sumTokenPrice.add(contractOrderInfo.getPrice()
-                    .multiply(contractOrderInfo.getIsContractHands()).multiply(contractMul.getContractMul()));
-            sumHands = sumHands.add(contractOrderInfo.getIsContractHands());
-            levers = levers.add(contractOrderInfo.getLeverNum());
-            sumMargin = sumMargin.add(contractOrderInfo.getMargin());
+        if (Strings.isBlank(contractOrder.getCoinName())) {
+            //throw new BusinessException("币种名称不允许为空");
+            throw new BusinessException(AjaxResultEnum.PARAMETER_IS_EMPTY.getMessage());
         }
+        if (Strings.isBlank(contractOrder.getMainCur())) {
+            //throw new BusinessException("主币名称不允许为空");
+            throw new BusinessException(AjaxResultEnum.PARAMETER_IS_EMPTY.getMessage());
+        }
+        if (Strings.isBlank(contractOrder.getTradeType().getTradeType())) {
+            //throw new BusinessException("交易类型不允许为空");
+            throw new BusinessException(AjaxResultEnum.PARAMETER_IS_EMPTY.getMessage());
+        }
+        if (Strings.isBlank(contractOrder.getPriceType().getPriceType())) {
+            // throw new BusinessException("价格类型不允许为空");
+            throw new BusinessException(AjaxResultEnum.PARAMETER_IS_EMPTY.getMessage());
+        }
+        if (Strings.isBlank(contractOrder.getContractMulId())) {
+            // throw new BusinessException("交易对配置id不能为空");
+            throw new BusinessException(AjaxResultEnum.PARAMETER_IS_EMPTY.getMessage());
+        }
+        if (Strings.isBlank(contractOrder.getLeverId())) {
+            // throw new BusinessException("交易对杠杆id不能为空");
+            throw new BusinessException(AjaxResultEnum.PARAMETER_IS_EMPTY.getMessage());
+        }
+        if (contractOrder.getPrice().doubleValue() <= 0) {
+            // throw new BusinessException("价格必须大于0");
+            throw new BusinessException(AjaxResultEnum.PARAMETER_IS_EMPTY.getMessage());
+        }
+        RedisDistributedLock redisDistributedLock = new RedisDistributedLock(redisRepository.getRedisTemplate());
+        boolean lock_coin = redisDistributedLock.lock(CacheConstants.MEMBER_PAIRS_KEY + contractOrder.getMember() + contractOrder.getPairsName(),
+                5000, 50, 100);
+        if (lock_coin) {
+            match_entrust.remove(contractOrder.getMember() + contractOrder.getPairsName());
+            // 获取当前价
+//            String value = redisRepository.get(CacheConstants.PRICE_HIG_LOW_KEY + contractOrder.getPairsName());
+//            JSONObject jo = JSONObject.parseObject(value);
+//            BigDecimal nowPrice = new BigDecimal(jo.getBigDecimal("nowPrice").toString());
+            // 币数量
+            // 判读交易对后台是否配置
+            ContractMul contractMul = contractMulMapper.selectById(contractOrder.getContractMulId());
+            if (!contractMul.getPairsName().equals(contractOrder.getPairsName())) {
+                throw new BusinessException(AjaxResultEnum.TRADING_PAIR_ERROR.getMessage());
+            }
+            // 合约乘数 * 杠杆手数
+            BigDecimal coinNum = contractMul.getContractMul().multiply(contractOrder.getContractHands());
+            // 杠杆倍数
+            Lever lever = leverMapper.selectById(contractOrder.getLeverId());
+            // 保证金 = 合约乘数 * （杠杆手数 * 币价格）
+//            BigDecimal sumPrice = contractMul.getContractMul()
+//                    .multiply(contractOrder.getContractHands().multiply(contractOrder.getPrice()));
+//            BigDecimal sumPrice = contractMul.getContractMul()
+//                    .multiply(contractOrder.getContractHands().multiply(new BigDecimal(1000)));
+//            BigDecimal sumPrice =contractOrder.getContractHands().multiply(contractOrder.getPrice());
+//            BigDecimal margin = sumPrice.divide(lever.getLever(), 8, BigDecimal.ROUND_HALF_UP);
+//            BigDecimal margin = sumPrice;
+            contractOrder.setCoinNum(coinNum);//币数量
+            contractOrder.setMargin(contractOrder.getMargin());//保证金
+            // 状态
+            contractOrder.setOrderState(TokenOrderConstant.Order_State.CREATE);
+            contractOrder.setLeverNum(lever.getLever());
+            contractOrder.setLeverDesc(lever.getLeverDesc());
+            contractOrder.setIsContractHands(contractOrder.getContractHands());
 
-        // 总保证金
-        warehouse.setMargin(sumMargin.add(contractOrder.getMargin()));
-        // 持仓均价
-        BigDecimal avePrice = sumTokenPrice.divide(sumHands.multiply(contractMul.getContractMul()), 8,
-                BigDecimal.ROUND_HALF_UP);
-        warehouse.setAvePrice(avePrice);
-        // 仓位价值
-        BigDecimal tokenPrice = contractMul.getContractMul()
-                .multiply(contractOrder.getContractHands().multiply(contractOrder.getPrice()));
-        tokenPrice = tokenPrice.add(sumTokenPrice);
-        warehouse.setTokenPrice(tokenPrice);
-        // 仓位总数
-        warehouse.setTokenNum(new BigDecimal(contractOrders.size()));
-        // 可用仓位总数
-        QueryWrapper<ContractOrder> isTokenNumWrapper = new QueryWrapper<ContractOrder>();
-        isTokenNumWrapper.eq("pairs_name", contractOrder.getPairsName());
-        isTokenNumWrapper.eq("member", contractOrder.getMember());
-        isTokenNumWrapper.ge("order_state", TokenOrderConstant.Order_State.CREATE);
-        warehouse.setIsTokenNum(new BigDecimal(contractOrderMapper.selectCount(isTokenNumWrapper)));
+            // 资金扣除
+            BigDecimal takeFee = openBalanceCopy(contractOrder, contractOrder.getMargin());
 
-        warehouse.setHands(sumHands);
-        warehouse.setOrders(new BigDecimal(contractOrders.size()));
-        warehouse.setClosePrice(nowPrice);
-        warehouse.setMember(contractOrder.getMember());
-        if (contractOrder.getTradeType().equals(ContractConstant.Trade_Type.OPEN_UP)) {
-            // 未实现盈亏
-            BigDecimal subPrice = nowPrice.subtract(avePrice);
-            warehouse.setUnProfitLoss(subPrice.multiply(sumHands).multiply(contractMul.getContractMul()));
-            BigDecimal aveLevel = levers.divide(new BigDecimal(contractOrders.size()), 8, BigDecimal.ROUND_HALF_UP);
-            warehouse.setAvgLevel(aveLevel);
-            // 收益
-            BigDecimal profit = subPrice.multiply(aveLevel).divide(avePrice, 8, BigDecimal.ROUND_HALF_UP)
-                    .divide(new BigDecimal(contractOrders.size()), 8, BigDecimal.ROUND_HALF_UP);
-            warehouse.setProfit(profit);
+            contractOrder.setTakeFee(takeFee);
+
+            if (contractOrder.getPriceType().equals(ContractConstant.Price_Type.CUSTOM_PRICE)) {
+                Set<String> set = new HashSet<String>();
+                if (contractOrder.getTradeType().equals(ContractConstant.Trade_Type.OPEN_UP)) {
+                    set.addAll(redisRepository.zsetRangByScore(
+                            CacheConstants.TOKEN_ORDER_MATCH_KEY + ContractConstant.Trade_Type.OPEN_DOWN
+                                    + CacheConstants.SPLIT + contractOrder.getPairsName(),
+                            0, contractOrder.getPrice().doubleValue()));
+
+                } else {
+                    set.addAll(redisRepository.zsetRevRangByScore(
+                            CacheConstants.TOKEN_ORDER_MATCH_KEY + ContractConstant.Trade_Type.OPEN_UP
+                                    + CacheConstants.SPLIT + contractOrder.getPairsName(),
+                            contractOrder.getPrice().doubleValue(), Long.parseLong("99999999999")));
+                }
+                if (!set.isEmpty()) {
+                    contractOrder.setOrderType(TokenOrderConstant.Order_Type.POSITIONS);
+                    contractOrder.setPriceType(ContractConstant.Price_Type.MARKET_PRICE);
+                } else {
+                    contractOrder.setOrderType(TokenOrderConstant.Order_Type.ORDERS);
+                    // 普通委托插入redis中
+                    redisRepository.zsetAdd(
+                            CacheConstants.TOKEN_ORDER_CUSTOM_KEY + contractOrder.getTradeType() + CacheConstants.SPLIT
+                                    + contractOrder.getPairsName(),
+                            JSONObject.toJSONString(contractOrder), contractOrder.getPrice().doubleValue());
+                }
+            } else {
+                contractOrder.setOrderType(TokenOrderConstant.Order_Type.POSITIONS);
+            }
+
+            contractOrderMapper.insert(contractOrder);
+            BrokerageRecordPo brokerageRecordPo = new BrokerageRecordPo(contractOrder.getMember(), "USDT", takeFee);
+            matchProducer.putCurrency(JSONObject.toJSONString(brokerageRecordPo));
+            if (contractOrder.getPriceType().equals(ContractConstant.Price_Type.MARKET_PRICE)) {
+                QueryWrapper<Warehouse> wrapperWarehouse = new QueryWrapper<Warehouse>();
+                wrapperWarehouse.eq("pairs_name", contractOrder.getPairsName());
+                wrapperWarehouse.eq("member", contractOrder.getMember());
+                wrapperWarehouse.eq("trade_type", contractOrder.getTradeType());
+                wrapperWarehouse.eq("state", TokenOrderConstant.Order_State.CREATE);
+                Warehouse warehouse = warehouseMapper.selectOne(wrapperWarehouse);
+                if (warehouse == null) {
+                    // 个人组合订单
+                    warehouse = new Warehouse();
+                }
+                warehouse.setState(TokenOrderConstant.Order_State.CREATE);
+                warehouse.setPairsName(contractOrder.getPairsName());
+                warehouse.setCoinName(contractOrder.getCoinName());
+                warehouse.setMainCur(contractOrder.getMainCur());
+                warehouse.setTradeType(contractOrder.getTradeType());
+                // 持仓均价
+                QueryWrapper<ContractOrder> wrapperOrder = new QueryWrapper<ContractOrder>();
+                wrapperOrder.eq("pairs_name", contractOrder.getPairsName());
+                wrapperOrder.eq("member", contractOrder.getMember());
+                wrapperOrder.eq("trade_type", contractOrder.getTradeType());
+                wrapperOrder.ne("order_state", TokenOrderConstant.Order_State.FINAL);
+                wrapperOrder.eq("order_type", TokenOrderConstant.Order_Type.POSITIONS);
+                List<ContractOrder> contractOrders = contractOrderMapper.selectList(wrapperOrder);
+                BigDecimal sumTokenPrice = new BigDecimal("0");
+                BigDecimal sumHands = new BigDecimal("0");
+                BigDecimal levers = new BigDecimal("0");
+                BigDecimal sumMargin = new BigDecimal("0");
+                for (ContractOrder contractOrderInfo : contractOrders) {
+//                    sumTokenPrice = sumTokenPrice.add(contractOrderInfo.getPrice()
+//                            .multiply(contractOrderInfo.getIsContractHands()).multiply(contractMul.getContractMul()));
+
+                    sumTokenPrice = sumTokenPrice.add(contractOrderInfo.getPrice()
+                            .multiply(contractOrderInfo.getIsContractHands()));
+
+                    sumHands = sumHands.add(contractOrderInfo.getIsContractHands());
+                    levers = levers.add(contractOrderInfo.getLeverNum());
+                    sumMargin = sumMargin.add(contractOrderInfo.getMargin());
+                }
+                // 总保证金
+                warehouse.setMargin(sumMargin);
+                // 持仓均价
+//                BigDecimal avePrice = sumTokenPrice.divide(sumHands.multiply(contractMul.getContractMul()), 8,
+//                        BigDecimal.ROUND_HALF_UP);
+                BigDecimal avePrice = sumTokenPrice.divide(sumHands, 8,
+                        BigDecimal.ROUND_HALF_UP);
+
+
+                warehouse.setAvePrice(avePrice);
+                // 仓位价值
+//                BigDecimal tokenPrice = contractMul.getContractMul()
+//                        .multiply(contractOrder.getContractHands().multiply(contractOrder.getPrice()));
+                BigDecimal tokenPrice = contractOrder.getContractHands().multiply(contractOrder.getPrice());
+                tokenPrice = tokenPrice.add(sumTokenPrice);
+                warehouse.setTokenPrice(tokenPrice);
+                // 仓位总数
+                warehouse.setTokenNum(new BigDecimal(contractOrders.size()));
+                // 可用仓位总数
+                QueryWrapper<ContractOrder> isTokenNumWrapper = new QueryWrapper<ContractOrder>();
+                isTokenNumWrapper.eq("pairs_name", contractOrder.getPairsName());
+                isTokenNumWrapper.eq("member", contractOrder.getMember());
+                isTokenNumWrapper.ge("order_state", TokenOrderConstant.Order_State.CREATE);
+                warehouse.setIsTokenNum(new BigDecimal(contractOrderMapper.selectCount(isTokenNumWrapper)));
+
+                warehouse.setHands(sumHands);
+                warehouse.setOrders(new BigDecimal(contractOrders.size()));
+//                warehouse.setClosePrice(nowPrice);
+                warehouse.setClosePrice(contractOrder.getPrice());
+
+                warehouse.setMember(contractOrder.getMember());
+                if (contractOrder.getTradeType().equals(ContractConstant.Trade_Type.OPEN_UP)) {
+                    // 未实现盈亏
+//                    BigDecimal subPrice = nowPrice.subtract(avePrice);
+                    BigDecimal subPrice = contractOrder.getPrice().subtract(avePrice);
+
+//                    warehouse.setUnProfitLoss(subPrice.multiply(sumHands).multiply(contractMul.getContractMul()));
+                    warehouse.setUnProfitLoss(subPrice.multiply(sumHands));
+                    BigDecimal aveLevel = levers.divide(new BigDecimal(contractOrders.size()), 8, BigDecimal.ROUND_HALF_UP);
+                    warehouse.setAvgLevel(aveLevel);
+                    // 收益
+                    BigDecimal profit = subPrice.multiply(aveLevel).divide(avePrice, 8, BigDecimal.ROUND_HALF_UP)
+                            .divide(new BigDecimal(contractOrders.size()), 8, BigDecimal.ROUND_HALF_UP);
+                    warehouse.setProfit(profit);
+                } else {
+                    // 未实现盈亏
+//                    BigDecimal subPrice = avePrice.subtract(nowPrice);
+                    BigDecimal subPrice = avePrice.subtract(contractOrder.getPrice());
+//                    warehouse.setUnProfitLoss(subPrice.multiply(sumHands).multiply(contractMul.getContractMul()));
+                    warehouse.setUnProfitLoss(subPrice.multiply(sumHands));
+                    BigDecimal aveLevel = levers.divide(new BigDecimal(contractOrders.size()), 8, BigDecimal.ROUND_HALF_UP);
+                    warehouse.setAvgLevel(aveLevel);
+                    // 收益
+                    BigDecimal profit = subPrice.multiply(aveLevel).divide(avePrice, 8, BigDecimal.ROUND_HALF_UP)
+                            .divide(new BigDecimal(contractOrders.size()), 8, BigDecimal.ROUND_HALF_UP);
+                    warehouse.setProfit(profit);
+                }
+                warehouseService.saveOrUpdate(warehouse);
+            }
+            redisDistributedLock.releaseLock(CacheConstants.MEMBER_PAIRS_KEY + contractOrder.getMember() + contractOrder.getPairsName());
         } else {
-            // 未实现盈亏
-            BigDecimal subPrice = avePrice.subtract(nowPrice);
-            warehouse.setUnProfitLoss(subPrice.multiply(sumHands).multiply(contractMul.getContractMul()));
-            BigDecimal aveLevel = levers.divide(new BigDecimal(contractOrders.size()), 8, BigDecimal.ROUND_HALF_UP);
-            warehouse.setAvgLevel(aveLevel);
-            // 收益
-            BigDecimal profit = subPrice.multiply(aveLevel).divide(avePrice, 8, BigDecimal.ROUND_HALF_UP)
-                    .divide(new BigDecimal(contractOrders.size()), 8, BigDecimal.ROUND_HALF_UP);
-            warehouse.setProfit(profit);
+            throw new BusinessException(AjaxResultEnum.FREQUENT_OPERATIONS.getMessage());
         }
-        warehouseService.saveOrUpdate(warehouse);
-
 
         return true;
     }
@@ -439,6 +536,68 @@ public class ContractOrderServiceImpl extends ServiceImpl<ContractOrderMapper, C
 
         } else {
             openBalance(contractOrder, contractMul, margin);
+        }
+        return takeFee;
+
+    }
+
+    private BigDecimal openBalanceCopy(ContractOrder contractOrder, BigDecimal margin) {
+        // 手续费
+        BigDecimal takeFee = new BigDecimal("30.00");
+        RedisDistributedLock redisDistributedLock = new RedisDistributedLock(redisRepository.getRedisTemplate());
+        boolean lock_coin = redisDistributedLock.lock(
+                CacheConstants.MEMBER_BALANCE_COIN_KEY + CacheConstants.SPLIT + contractOrder.getMember(), 5000, 50,
+                100);
+        if (lock_coin) {
+            QueryWrapper<Balance> wrapperMain = new QueryWrapper<Balance>();
+            wrapperMain.eq("currency", contractOrder.getMainCur());
+            wrapperMain.eq("user_id", contractOrder.getMember());
+            Balance balanceMain = balanceMapper.selectOne(wrapperMain);
+
+            try {
+                if (balanceMain.getAssetsBalance().compareTo(margin) == -1) {
+                    throw new BusinessException(AjaxResultEnum.INSUFFICIENT_MARGIN_BALANCE.getMessage());
+                }
+            } catch (Exception e) {
+                throw new BusinessException(AjaxResultEnum.INSUFFICIENT_MARGIN_BALANCE.getMessage());
+            }
+            // 手续费
+//            if (contractOrder.getTradeType().equals(ContractConstant.Trade_Type.OPEN_UP)) {
+                /*takeFee = contractOrder.getIsContractHands().multiply(contractMul.getContractMul())
+                        .multiply(contractOrder.getPrice()).multiply(contractMul.getMakerFee());*/
+//                takeFee = contractOrder.getIsContractHands().multiply(contractMul.getContractMul())
+//                        .multiply(new BigDecimal(1000)).multiply(contractMul.getMakerFee());
+//            } else {
+//                takeFee = contractOrder.getIsContractHands().multiply(contractMul.getContractMul())
+//                        .multiply(contractOrder.getPrice()).multiply(contractMul.getTakerFee());
+//                takeFee = contractOrder.getIsContractHands().multiply(contractMul.getContractMul())
+//                        .multiply(new BigDecimal(1000)).multiply(contractMul.getTakerFee());
+//            }
+
+            BigDecimal assetsBalance = balanceMain.getAssetsBalance();
+            BigDecimal assetsBlockedBalance = balanceMain.getAssetsBlockedBalance();
+
+            // 冻结用户余额，保证金 = 可用资金 - 保证金*2 -手續費
+//            BigDecimal  kk=margin.multiply(new BigDecimal(2));
+//            BigDecimal subtract = balanceMain.getAssetsBalance().subtract(kk).subtract(takeFee);
+
+            // 冻结用户余额，保证金 = 可用资金 - 保证金 -手續費
+            BigDecimal subtract = balanceMain.getAssetsBalance().subtract(margin).subtract(takeFee);
+
+            balanceMain.setAssetsBalance(subtract);
+            balanceMain.setAssetsBlockedBalance(balanceMain.getAssetsBlockedBalance().add(margin));
+            balanceMapper.updateById(balanceMain);
+            redisDistributedLock.releaseLock(
+                    CacheConstants.MEMBER_BALANCE_COIN_KEY + CacheConstants.SPLIT + balanceMain.getUserId());
+
+            // 资金减少记录
+            saveBalanceRecord(contractOrder.getMember(),contractOrder.getMainCur(),10,1,assetsBalance,balanceMain.getAssetsBalance(),subtract);
+
+            // 冻结日志
+            saveBalanceRecord(contractOrder.getMember(),contractOrder.getMainCur(),13,2,assetsBlockedBalance,balanceMain.getAssetsBlockedBalance(),margin);
+
+        } else {
+            openBalanceCopy(contractOrder, margin);
         }
         return takeFee;
 

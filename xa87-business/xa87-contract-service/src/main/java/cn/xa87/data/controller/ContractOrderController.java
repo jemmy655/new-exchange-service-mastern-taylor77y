@@ -33,7 +33,7 @@ public class ContractOrderController {
     @PostMapping(value = "/setContractOrder")
     //@LogHeaderChecker
     public Response setContractOrder(@RequestBody ContractOrder contractOrder) {
-        return Response.success(contractOrderService.setContractOrder(contractOrder));
+        return Response.success(contractOrderService.setContractOrderNew(contractOrder));
     }
 
     @ApiOperation("获取订单详情")
