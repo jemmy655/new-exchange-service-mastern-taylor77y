@@ -62,8 +62,8 @@ public class BalanceBusiness {
                 activeOrder.setCoinNum(activeOrder.getCoinNum().subtract(coinNum));
                 contractOrderMapper.updateById(activeOrder);
                 // 保证金退还
-                BigDecimal passiveSumPrice = contractMul.getContractMul()
-                        .multiply(matchBalance.getCount().multiply(activeOrder.getPrice()));
+                BigDecimal passiveSumPrice = contractMul.getContractMul().multiply(matchBalance.getCount().multiply(activeOrder.getPrice()));
+
                 BigDecimal activeMargin = passiveSumPrice.divide(activeOrder.getLeverNum(), 8, BigDecimal.ROUND_HALF_UP);
                 // 手续费
                 BigDecimal takeFee = new BigDecimal("0");
@@ -90,8 +90,7 @@ public class BalanceBusiness {
                 wrapperActive.eq("currency", activeOrder.getMainCur());
                 wrapperActive.eq("user_id", activeOrder.getMember());
                 Balance balanceActive = balanceMapper.selectOne(wrapperActive);
-                balanceActive
-                        .setAssetsBalance(balanceActive.getAssetsBalance().add(activeMargin).add(matchFee).subtract(takeFee));
+                balanceActive.setAssetsBalance(balanceActive.getAssetsBalance().add(activeMargin).add(matchFee).subtract(takeFee));
                 balanceActive.setAssetsBlockedBalance(balanceActive.getAssetsBlockedBalance().subtract(activeMargin));
                 updateBalance(balanceActive);
 
@@ -151,8 +150,7 @@ public class BalanceBusiness {
                 wrapperActive.eq("currency", passiveOrder.getMainCur());
                 wrapperActive.eq("user_id", passiveOrder.getMember());
                 Balance balanceActive = balanceMapper.selectOne(wrapperActive);
-                balanceActive
-                        .setAssetsBalance(balanceActive.getAssetsBalance().add(activeMargin).add(matchFee).subtract(takeFee));
+                balanceActive.setAssetsBalance(balanceActive.getAssetsBalance().add(activeMargin).add(matchFee).subtract(takeFee));
                 balanceActive.setAssetsBlockedBalance(balanceActive.getAssetsBlockedBalance().subtract(activeMargin));
                 updateBalance(balanceActive);
 

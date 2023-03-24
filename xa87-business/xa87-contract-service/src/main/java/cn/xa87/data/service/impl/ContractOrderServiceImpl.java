@@ -15,15 +15,13 @@ import cn.xa87.data.service.WarehouseService;
 import cn.xa87.model.*;
 import cn.xa87.po.BrokerageRecordPo;
 import cn.xa87.vo.ContractDeliveryVo;
-import cn.xa87.vo.ContractOrderNewVO;
+import cn.xa87.vo.PerpetualContractOrderVO;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -461,31 +459,8 @@ public class ContractOrderServiceImpl extends ServiceImpl<ContractOrderMapper, C
     }
 
     @Override
-    public ContractOrderNewVO getContractOrder(String id) {
-        DecimalFormat df = new DecimalFormat("0.00%");
-        ContractOrderNewVO contractOrderNewVO=new ContractOrderNewVO();
-        ContractOrder contractOrder=contractOrderMapper.selectById(id);
-        if (contractOrder==null){
-           return contractOrderNewVO;
-        }
-        //git
-        contractOrderNewVO.setOrderId(contractOrder.getId());
-        contractOrderNewVO.setOrderType(contractOrder.getOrderType());
-        contractOrderNewVO.setCreateTime(contractOrder.getCreateTime());
-        contractOrderNewVO.setUpdateTime(contractOrder.getUpdateTime());
-        contractOrderNewVO.setMargin(contractOrder.getMargin());
-        contractOrderNewVO.setMatchFee(contractOrder.getMatchFee());
-        contractOrderNewVO.setKPrice(contractOrder.getIsContractHands().multiply(new BigDecimal(1000)));
-        contractOrderNewVO.setBPrice(contractOrder.getIsContractHands().multiply(new BigDecimal(1000)));
-        if (contractOrder.getMatchFee().compareTo(new BigDecimal(0))==1) {
-            contractOrderNewVO.setMatchFeeUp(df.format(contractOrder.getMatchFee().divide(contractOrderNewVO.getKPrice())));
-        }else {
-            contractOrderNewVO.setMatchFeeUp("0.0%");
-        }
-        contractOrderNewVO.setTakeFee(contractOrder.getTakeFee());
-        contractOrderNewVO.setPrice(contractOrder.getPrice());
-        contractOrderNewVO.setMatchPrice(contractOrder.getMatchPrice());
-        return contractOrderNewVO;
+    public ContractOrder getContractOrder(String id) {
+        return contractOrderMapper.selectById(id);
     }
 
     @Override

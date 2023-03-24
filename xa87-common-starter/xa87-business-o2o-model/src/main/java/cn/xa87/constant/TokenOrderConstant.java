@@ -2,10 +2,10 @@ package cn.xa87.constant;
 
 public class TokenOrderConstant {
     public enum Order_State {
-        CREATE("CREATE"),
-        MATCH("MATCH"),
-        CANCEL("CANCEL"),
-        FINAL("FINAL");
+        CREATE("CREATE"), //创建
+        MATCH("MATCH"),   //匹配
+        CANCEL("CANCEL"),   //取消
+        FINAL("FINAL");     //结束
         private String state;
 
 

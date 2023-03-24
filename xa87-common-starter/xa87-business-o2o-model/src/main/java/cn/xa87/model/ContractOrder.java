@@ -61,7 +61,7 @@ public class ContractOrder extends Model<ContractOrder> {
     @ApiModelProperty(value = "杠杆手数--不用传")
     private BigDecimal contractHands;
     /**
-     * 价格
+     * 建仓价额
      */
     @ApiModelProperty(value = "价格")
     private BigDecimal price;
@@ -71,7 +71,7 @@ public class ContractOrder extends Model<ContractOrder> {
     @ApiModelProperty(value = "平仓价格")
     private BigDecimal matchPrice;
     /**
-     * 营收
+     * 收益  建仓价额-平仓价格
      */
     @ApiModelProperty(value = "收益")
     private BigDecimal matchFee;
@@ -107,6 +107,9 @@ public class ContractOrder extends Model<ContractOrder> {
     private ContractConstant.Price_Type priceType;
     /**
      * 状态
+     *  CREATE("CREATE"), 已提交
+     *  CANCEL("CANCEL"), 已撤销
+     *  FINAL("FINAL");   委托财务
      */
     @ApiModelProperty(value = "状态---不用传")
     private TokenOrderConstant.Order_State orderState;
@@ -152,6 +155,13 @@ public class ContractOrder extends Model<ContractOrder> {
      */
     @TableField("update_time")
     private Date updateTime;
+
+
+    @TableField(exist = false)
+    private BigDecimal KPrice;//开仓金额   每手乘以1000
+
+    @TableField(exist = false)
+    private BigDecimal BPrice;//可平金额   每手乘以1000
 
     @Override
     protected Serializable pkVal() {
