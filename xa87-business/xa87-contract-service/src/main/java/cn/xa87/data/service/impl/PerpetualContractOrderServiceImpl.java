@@ -120,13 +120,13 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
     public List<Object> getWarehouses(String memberId, String pairsName,String price) {
         List<Object> list=new ArrayList<>();
         DecimalFormat df = new DecimalFormat("0.00%");
-        double random = Math.random()*100;
         QueryWrapper<PerpetualContractOrder> wrapperMain = new QueryWrapper<PerpetualContractOrder>();
         wrapperMain.eq("pairs_name", pairsName);
         wrapperMain.eq("order_state", "POSITIONS"); //状态为持仓
         wrapperMain.eq("member_id", memberId);
         List<PerpetualContractOrder> balanceMain = perpetualContractOrderMapper.selectList(wrapperMain);
         for (PerpetualContractOrder o:balanceMain) {
+            double random = Math.random()*100;
             JSONObject josnInfo = new JSONObject();
             BigDecimal nowPrice=new BigDecimal(price);
             //傻逼操作 控盘
@@ -147,11 +147,14 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
 
             josnInfo.put("price",o.getKPrice()); //成本价
             josnInfo.put("time",o.getCreateTime());//创建时间
-            if (o.getProfit().compareTo(new BigDecimal(0.00))==1) {
-                josnInfo.put("profitUp", df.format(o.getProfit().divide(o.getAmount())));//收益率
-            }else {
-                josnInfo.put("profitUp","0.00%");
-            }
+//            if (o.getProfit().compareTo(new BigDecimal(0.00))==1) {
+//                josnInfo.put("profitUp", df.format(o.getProfit().divide(o.getAmount())));//收益率
+//            }else {
+//                //应该随机
+//                josnInfo.put("profitUp","0.00%");
+//            }
+            BigDecimal profitUp = o.getProfit().divide(o.getAmount());
+            josnInfo.put("profitUp", df.format(profitUp));//收益率
             josnInfo.put("amount",o.getAmount());
             josnInfo.put("id",o.getId());
             josnInfo.put("tradeType",o.getTradeType());
@@ -178,7 +181,7 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
             wrapperMain.eq("user_id", perpetualContractOrderVO.getMemberId());
             Balance balanceMain = balanceMapper.selectOne(wrapperMain);
             if (balanceMain==null){
-                throw new BusinessException("用户账号不存在");
+                throw new BusinessException(perpetualContractOrderVO.getCoinName().concat("不足"));
             }
             //要扣除的价格
             BigDecimal deductPrice=perpetualContractOrderVO.getMargin().add(perpetualContractOrderVO.getMatchFee());

@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 
-@Api(value = "交易", tags = {"交易"})
+@Api(value = "新交易", tags = {"亚琴新交易"})
 @RestController
 @RequestMapping("/perpetual_contract")
 public class PerpetualContractOrderController {
