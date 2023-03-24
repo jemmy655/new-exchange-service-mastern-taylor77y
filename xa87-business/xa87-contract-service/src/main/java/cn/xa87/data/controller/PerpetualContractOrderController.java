@@ -40,7 +40,7 @@ public class PerpetualContractOrderController {
     @HeaderChecker(headerNames = {"token", "userId"})
     @PostMapping(value = "/setContractOrderSell")
     public Response setContractOrderSell(@RequestBody PerpetualContractOrderVO perpetualContractOrder) {
-        return Response.success(perpetualContractOrderService.setContractOrder(perpetualContractOrder));
+        return Response.success(perpetualContractOrderService.setContractOrderSell(perpetualContractOrder));
     }
 
     @ApiOperation("单个平仓")
