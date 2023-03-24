@@ -7,7 +7,7 @@ import cn.xa87.model.MemberCurrencyConfig;
 import cn.xa87.model.SecondsBetLog;
 import cn.xa87.model.SecondsConfig;
 import cn.xa87.vo.ContractDeliveryVo;
-import cn.xa87.vo.ContractOrderNewVO;
+import cn.xa87.vo.PerpetualContractOrderVO;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -19,7 +19,7 @@ public interface ContractOrderService extends IService<ContractOrder> {
 
     boolean setContractOrder(ContractOrder contractOrder);
 
-    ContractOrderNewVO getContractOrder(String id);
+    ContractOrder getContractOrder(String id);
 
     boolean setOrdTriggerMatch(String id, BigDecimal price, TokenOrderConstant.Match_Type matchType);
 
