@@ -137,7 +137,13 @@ public class PerpetualContractOrder extends Model<PerpetualContractOrder>{
     @TableId(value = "settle_time")
     private Date settleTime;
 
-    public PerpetualContractOrder(String memberId, String pairsName, BigDecimal kPrice, BigDecimal bPrice, BigDecimal amount, BigDecimal margin, BigDecimal matchFee, BigDecimal profit, int isWin, int isControl, BigDecimal controlPrice, String leverId, BigDecimal leverNum, String leverDesc, String orderState, String tradeType, BigDecimal contractHands, Date createTime, Date settleTime) {
+    /**
+     * 可用手数
+     */
+    @TableId(value = "usable_control_hands")
+    private BigDecimal usableControlHands;
+
+    public PerpetualContractOrder(String memberId, String pairsName, BigDecimal kPrice, BigDecimal bPrice, BigDecimal amount, BigDecimal margin, BigDecimal matchFee, BigDecimal profit, int isWin, int isControl, BigDecimal controlPrice, String leverId, BigDecimal leverNum, String leverDesc, String orderState, String tradeType, BigDecimal contractHands, Date createTime, Date settleTime,BigDecimal usableControlHands) {
         this.memberId = memberId;
         this.pairsName = pairsName;
         this.kPrice = kPrice;
@@ -157,5 +163,6 @@ public class PerpetualContractOrder extends Model<PerpetualContractOrder>{
         this.contractHands = contractHands;
         this.createTime = createTime;
         this.settleTime = settleTime;
+        this.usableControlHands=usableControlHands;
     }
 }

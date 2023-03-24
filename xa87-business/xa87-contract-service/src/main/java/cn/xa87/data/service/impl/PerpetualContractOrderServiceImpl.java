@@ -16,6 +16,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import io.swagger.models.auth.In;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,8 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualContractOrderMapper, PerpetualContractOrder>
@@ -80,12 +83,13 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
                     perpetualContractOrder.getTradeType(),
                     perpetualContractOrder.getContractHands(),
                     new Date(),
-                    null
+                    null,
+                    perpetualContractOrder.getContractHands()
             );
             perpetualContractOrderMapper.insert(perpetual);
             redisDistributedLock.releaseLock(CacheConstants.MEMBER_PAIRS_KEY + perpetualContractOrder.getMemberId() + perpetualContractOrder.getPairsName());
         }
-        return false;
+        return true;
     }
 
     @Override
@@ -108,12 +112,12 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
 
     @Override
     public boolean setOrderMatch(String id) {
-        return false;
+        return true;
     }
 
     @Override
     public boolean setAllContractMatch(String member, String pairsName) {
-        return false;
+        return true;
     }
 
     @Override
@@ -169,6 +173,64 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
         return null;
     }
 
+    @Override
+    public boolean setContractOrderSell(PerpetualContractOrderVO perpetualContractOrder) {
+        QueryWrapper<PerpetualContractOrder> wrapperMain = new QueryWrapper<PerpetualContractOrder>();
+        wrapperMain.eq("pairs_name", perpetualContractOrder.getPairsName());
+        wrapperMain.eq("order_state", "POSITIONS"); //状态为持仓
+        wrapperMain.eq("member_id", perpetualContractOrder.getMemberId());
+        List<PerpetualContractOrder> balanceMain = perpetualContractOrderMapper.selectList(wrapperMain);
+        if (balanceMain==null){
+            throw new BusinessException("没有持仓手数可用");
+        }
+        List<PerpetualContractOrder> b=balanceMain.stream().filter(a -> a.getTradeType().equals(perpetualContractOrder.getTradeType())).collect(Collectors.toList());
+        if (new BigDecimal(b.size()).compareTo(perpetualContractOrder.getContractHands())==-1){
+            throw new BusinessException("持仓手数小于要扣除手数");
+        }
+        for (PerpetualContractOrder per:b) {
+            if (per.getContractHands().compareTo(new BigDecimal(0))==0){ //已全部扣除
+                break;
+            }
+            if (per.getContractHands().compareTo(perpetualContractOrder.getContractHands())==0){ //等于要扣除的手数
+                //退回金额
+                perpetualContractOrder.getContractHands().subtract(per.getContractHands());//减少手数
+                //修改状态为已平仓 ClLOSEOUT
+                BigDecimal margin= perpetualContractOrder.getAmount().add(per.getProfit());//扣除金额
+                updateBalance(perpetualContractOrder,margin);
+                per.setOrderState("ClLOSEOUT");
+                per.setBPrice(perpetualContractOrder.getKPrice());//结束价格
+                per.setUsableControlHands(new BigDecimal(0));
+                perpetualContractOrderMapper.updateById(per);
+                break;
+            }
+            if (per.getContractHands().compareTo(perpetualContractOrder.getContractHands())==1){ //大于要扣除的手数
+
+                //退回金额
+                perpetualContractOrder.getContractHands().subtract(per.getContractHands());//减少手数
+                //修改状态为已平仓 ClLOSEOUT
+                BigDecimal a=per.getContractHands().multiply(new BigDecimal(1000));//要减少的金额
+                updateBalance(perpetualContractOrder,a);//还有持仓手数 不减少 收益
+
+                per.setBPrice(perpetualContractOrder.getKPrice());
+                per.setUsableControlHands(perpetualContractOrder.getContractHands().subtract(per.getUsableControlHands()));
+                perpetualContractOrderMapper.updateById(per);
+                break;
+            }
+            if (per.getContractHands().compareTo(perpetualContractOrder.getContractHands())==-1){ //小于要扣除的手数
+                //退回金额
+                perpetualContractOrder.getContractHands().subtract(per.getContractHands());//减少手数
+                //修改状态为已平仓 ClLOSEOUT
+                BigDecimal margin= perpetualContractOrder.getAmount().add(per.getProfit());//扣除金额
+                updateBalance(perpetualContractOrder,margin);//还有持仓手数 不减少 收益
+                per.setOrderState("ClLOSEOUT");
+                per.setBPrice(perpetualContractOrder.getKPrice());
+                per.setUsableControlHands(new BigDecimal(0));
+                perpetualContractOrderMapper.updateById(per);
+            }
+        }
+        return true;
+    }
+
     private BigDecimal openBalance(PerpetualContractOrderVO perpetualContractOrderVO) {
         // 手续费
         RedisDistributedLock redisDistributedLock = new RedisDistributedLock(redisRepository.getRedisTemplate());
@@ -217,6 +279,43 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
 
     }
 
+    /**
+     *  退回金额
+     * @param contractOrder
+     * @param margin  要退回的金额
+     */
+    private void updateBalance(PerpetualContractOrderVO contractOrder, BigDecimal margin) {
+        // 要回到账户余额 = 金额 + 收益
+        RedisDistributedLock redisDistributedLock = new RedisDistributedLock(redisRepository.getRedisTemplate());
+        boolean lock_coin = redisDistributedLock.lock(
+                CacheConstants.MEMBER_BALANCE_COIN_KEY + CacheConstants.SPLIT + contractOrder.getMemberId(), 5000, 50,
+                100);
+        if (lock_coin) {
+            QueryWrapper<Balance> wrapperActive = new QueryWrapper<Balance>();
+            wrapperActive.eq("currency", contractOrder.getCoinName());
+            wrapperActive.eq("user_id", contractOrder.getMemberId());
+            Balance balanceActive = balanceMapper.selectOne(wrapperActive);
+
+            BigDecimal assetsBalance = balanceActive.getAssetsBalance();
+            BigDecimal assetsBlockedBalance = balanceActive.getAssetsBlockedBalance();
+
+            BigDecimal balance = balanceActive.getAssetsBalance().add(margin);
+            balanceActive.setAssetsBalance(balance);
+
+            balanceActive.setAssetsBlockedBalance(balanceActive.getAssetsBlockedBalance().subtract(contractOrder.getMargin()));
+            balanceMapper.updateById(balanceActive);
+            redisDistributedLock.releaseLock(
+                    CacheConstants.MEMBER_BALANCE_COIN_KEY + CacheConstants.SPLIT + balanceActive.getUserId());
+
+            // 平仓可用增加
+            saveBalanceRecord(contractOrder.getMemberId(),contractOrder.getCoinName(),11,2,assetsBalance,balanceActive.getAssetsBalance(),balance);
+
+            // 平仓冻结减少
+            saveBalanceRecord(contractOrder.getMemberId(),contractOrder.getCoinName(),12,1,assetsBlockedBalance,balanceActive.getAssetsBlockedBalance(),margin);
+        } else {
+            updateBalance(contractOrder, margin);
+        }
+    }
 
     private void saveBalanceRecord(String memberId,String currency,Integer balanceType,Integer fundsType,BigDecimal balanceBefore, BigDecimal balanceBack,BigDecimal balanceDifference){
         BalanceRecord balanceRecord = new BalanceRecord();

@@ -24,4 +24,5 @@ public interface PerpetualContractOrderService extends IService<PerpetualContrac
 
     Response getHistoryOrders(String member, String pairsName, TokenOrderConstant.Order_State orderState, Integer pageNum, Integer pageSize);
 
+    boolean setContractOrderSell(PerpetualContractOrderVO perpetualContractOrder);
 }
