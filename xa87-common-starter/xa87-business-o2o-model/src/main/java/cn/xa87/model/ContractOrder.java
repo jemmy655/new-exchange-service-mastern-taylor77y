@@ -53,7 +53,7 @@ public class ContractOrder extends Model<ContractOrder> {
     /**
      * 保证金
      */
-    @ApiModelProperty(value = "保证金--不用传")
+    @ApiModelProperty(value = "保证金")
     private BigDecimal margin;
     /**
      * 杠杆手数
@@ -83,7 +83,7 @@ public class ContractOrder extends Model<ContractOrder> {
     /**
      * 数量
      */
-    @ApiModelProperty(value = "币数量--不用传")
+    @ApiModelProperty(value = "币数量")
     private BigDecimal coinNum;
     /**
      * 可用合约手数

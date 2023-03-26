@@ -20,6 +20,7 @@
         <module>xa87-entrust-consumer</module>
         <module>xa87-otc-service</module>
         <module>xa87-wallet-service</module>
+        <module>xa87-fund-service</module>
 <!--        <module>xa87-socket-client</module>-->
     </modules>
     <artifactId>xa87-business</artifactId>
