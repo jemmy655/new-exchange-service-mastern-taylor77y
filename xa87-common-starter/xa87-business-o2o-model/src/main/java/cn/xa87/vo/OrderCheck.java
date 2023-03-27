@@ -14,17 +14,20 @@ public class OrderCheck implements Serializable {
 
     private BigDecimal min;
 
-    private Date buyDate;
+    private Date buyDate; //买入时间
 
-    private Date startDate;
+    private Date startDate;//起息日
 
-    private String distribute;
+    private String distribute;//每天
 
-    private Date endDate;
+    private Date endDate;//结束时间
 
-    private String ransomRate;
+    private String ransomRate;//
 
-    private String predictRate;
+    private String predictRate;//预计收益
 
-    private String todayRate;
+    private String todayRate;//今天收益率
+
+    private String buyPairName;//购买币
+    private String periodDay;//周期
 }

@@ -12,6 +12,7 @@ import cn.xa87.data.service.SmartPoolProductService;
 import cn.xa87.model.*;
 import cn.xa87.vo.OrderCheck;
 import cn.xa87.vo.SmartPoolOrderVo;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.checkerframework.checker.units.qual.A;
@@ -20,10 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class SmartPoolOrderServiceImpl extends ServiceImpl<SmartPoolOrderMapper, SmartPoolOrder> implements SmartPoolOrderService {
@@ -38,18 +36,24 @@ public class SmartPoolOrderServiceImpl extends ServiceImpl<SmartPoolOrderMapper,
     private Xa87RedisRepository redisRepository;
 
     @Override
-    public List<SmartPoolOrder> getSmartPoolOrderByUserId(String userId, String status) {
+    public List<Map<String,Object>> getSmartPoolOrderByUserId(String userId, String status) {
+        List<Map<String,Object>> list=new ArrayList<>();
         QueryWrapper<SmartPoolOrder> wrapperMain = new QueryWrapper<SmartPoolOrder>();
         wrapperMain.eq("enabled", status);
         wrapperMain.eq("member_id", userId);
         wrapperMain.orderByDesc("create_time");
         List<SmartPoolOrder> fundOrders = this.baseMapper.selectList(wrapperMain);
-        return fundOrders;
+        for (SmartPoolOrder f:fundOrders){
+            Map<String,Object> map= JSON.parseObject(JSON.toJSONString(f), Map.class);
+            SmartPoolProduct fundProduct = smartPoolProductMapper.selectById(f.getProductId());
+            map.put("name",fundProduct.getZhName());
+            list.add(map);
+        }
+        return list;
     }
 
     @Override
     public OrderCheck getCheckSmartPoolOrder(String productId) {
-
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
         SmartPoolProduct fundProduct = smartPoolProductMapper.selectById(productId);
         if (fundProduct == null) {
@@ -62,7 +66,9 @@ public class SmartPoolOrderServiceImpl extends ServiceImpl<SmartPoolOrderMapper,
         fundOrderCheck.setBuyDate(new Date());
         fundOrderCheck.setStartDate(DataUtils.addDays(sdf1.format(new Date()), "yyyy-MM-dd", 1));
         fundOrderCheck.setDistribute("每天");
-        fundOrderCheck.setTodayRate(fundProduct.getTodayRate() + "%");
+        fundOrderCheck.setTodayRate(fundProduct.getTodayRate().toString());
+        fundOrderCheck.setBuyPairName(fundProduct.getBuyPairsName());
+        fundOrderCheck.setPeriodDay(fundProduct.getPeriodDay().toString());
         return fundOrderCheck;
     }
 
@@ -133,14 +139,19 @@ public class SmartPoolOrderServiceImpl extends ServiceImpl<SmartPoolOrderMapper,
 
     @Override
     public Boolean setSmartPoolOrderRedeem(SmartPoolOrderVo fundOrderVo) {
-
-        SmartPoolProduct fundProduct = smartPoolProductMapper.selectById(fundOrderVo.getProductId());
-        if (fundProduct == null) {
-            throw new BusinessException("产品不存在，请检查id是否正确");
-        }
         SmartPoolOrder fundOrder=this.baseMapper.selectById(fundOrderVo.getId());
         if (fundOrder == null) {
             throw new BusinessException("订单不存在，请检查id是否正确");
+        }
+        SmartPoolProduct fundProduct = smartPoolProductMapper.selectById(fundOrder.getProductId());
+        if (fundProduct == null) {
+            throw new BusinessException("产品不存在，请检查id是否正确");
+        }
+        if (fundProduct.getPeriodDayUnlock()>0){
+            int days = (int) ((fundOrder.getStartTime().getTime() - new Date().getTime()) / (1000*3600*24));
+            if (fundProduct.getPeriodDayUnlock()>=days){ // 可解锁日期 小于 等于 已过天数
+                return false;
+            }
         }
         //改变状态
         //改变结束时间

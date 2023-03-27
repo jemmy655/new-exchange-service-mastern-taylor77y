@@ -17,6 +17,7 @@ import cn.xa87.model.FundOrder;
 import cn.xa87.model.FundProduct;
 import cn.xa87.vo.OrderCheck;
 import cn.xa87.vo.FundOrderVo;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,10 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder> implements FundOrderService {
@@ -41,13 +39,21 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
     private Xa87RedisRepository redisRepository;
 
     @Override
-    public List<FundOrder> getFundOrderByUserId(String userId, String status) {
+    public List<Map<String,Object>> getFundOrderByUserId(String userId, String status) {
+        List<Map<String,Object>> list=new ArrayList<>();
         QueryWrapper<FundOrder> wrapperMain = new QueryWrapper<FundOrder>();
         wrapperMain.eq("enabled", status);
         wrapperMain.eq("member_id", userId);
         wrapperMain.orderByDesc("create_time");
         List<FundOrder> fundOrders = this.baseMapper.selectList(wrapperMain);
-        return fundOrders;
+        for (FundOrder f:fundOrders){
+            Map<String,Object> map=JSON.parseObject(JSON.toJSONString(f), Map.class);
+            FundProduct fundProduct = fundProductMapper.selectById(f.getFundProductId());
+            map.put("fund_image",fundProduct.getFundImage());
+            map.put("name",fundProduct.getZhName());
+            list.add(map);
+        }
+        return list;
     }
 
     @Override
@@ -85,13 +91,13 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
         //违约金计算公式=基金产品 违约结算比列*剩余天*投资金额
         //		    正常赎回=累计收益
         //判断基金产品是否存在
-        FundProduct fundProduct = fundProductMapper.selectById(fundOrderVo.getFundProductId());
-        if (fundProduct == null) {
-            throw new BusinessException("基金产品不存在，请检查id是否正确");
-        }
         FundOrder fundOrder=this.baseMapper.selectById(fundOrderVo.getId());
         if (fundOrder == null) {
             throw new BusinessException("订单不存在，请检查id是否正确");
+        }
+        FundProduct fundProduct = fundProductMapper.selectById(fundOrder.getFundProductId());
+        if (fundProduct == null) {
+            throw new BusinessException("基金产品不存在，请检查id是否正确");
         }
         //计算违约金
         //改变状态
@@ -111,13 +117,14 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
 
     @Override
     public Boolean setRedeem(FundOrderVo fundOrderVo) {
+
+        FundOrder fundOrder=this.baseMapper.selectById(fundOrderVo.getId());
+        if (fundOrder == null) {
+            throw new BusinessException("订单不存在，请检查id是否正确");
+        }
         FundProduct fundProduct = fundProductMapper.selectById(fundOrderVo.getFundProductId());
         if (fundProduct == null) {
             throw new BusinessException("基金产品不存在，请检查id是否正确");
-        }
-        FundOrder fundOrder=this.baseMapper.selectById(fundOrderVo.getId());
-        if (fundProduct == null) {
-            throw new BusinessException("订单不存在，请检查id是否正确");
         }
         fundOrder.setEnabled(1);
         fundOrder.setFinishValueDate(new Date());
@@ -147,6 +154,7 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
         fundOrderCheck.setPredictRate(fundProduct.getDayRateFront()+"~"+fundProduct.getDayRateBehind());
         fundOrderCheck.setRansomRate(fundProduct.getDefaultRatio()+"%");
         fundOrderCheck.setTodayRate(fundProduct.getTodayRate()+"%");
+        fundOrderCheck.setPeriodDay(fundProduct.getPeriodDay().toString());
         return fundOrderCheck;
     }
 

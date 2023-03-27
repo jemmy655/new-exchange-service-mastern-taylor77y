@@ -11,7 +11,7 @@ import java.util.Map;
 public interface SmartPoolOrderService {
 
 
-    List<SmartPoolOrder> getSmartPoolOrderByUserId(String userId, String status);
+    List<Map<String,Object>> getSmartPoolOrderByUserId(String userId, String status);
 
     OrderCheck getCheckSmartPoolOrder(String productId);
 

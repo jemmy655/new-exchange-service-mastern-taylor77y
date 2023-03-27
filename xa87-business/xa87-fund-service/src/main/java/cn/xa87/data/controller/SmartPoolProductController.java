@@ -55,14 +55,18 @@ public class SmartPoolProductController {
     @ApiOperation("买入智能矿池产品")
     @HeaderChecker(headerNames = {"token", "userId"})
     @PostMapping(value = "/setSmartPoolOrderPurchase")
-    public Response setSmartPoolOrderPurchase(SmartPoolOrderVo fundOrderVo) {
+    public Response setSmartPoolOrderPurchase(@RequestBody SmartPoolOrderVo fundOrderVo) {
         return Response.success(smartPoolProductService.setSmartPoolOrderPurchase(fundOrderVo));
     }
 
     @ApiOperation("赎回智能矿池产品")
     @HeaderChecker(headerNames = {"token", "userId"})
     @PostMapping(value = "/setSmartPoolOrderRedeem")
-    public Response setSmartPoolOrderRedeem(SmartPoolOrderVo fundOrderVo) {
+    public Response setSmartPoolOrderRedeem(@RequestBody SmartPoolOrderVo fundOrderVo) {
+        Boolean isOk=smartPoolProductService.setSmartPoolOrderRedeem(fundOrderVo);
+        if (!isOk){
+            return Response.failure("1000","未到达可解锁日期，不可赎回");
+        }
         return Response.success(smartPoolProductService.setSmartPoolOrderRedeem(fundOrderVo));
     }
 }

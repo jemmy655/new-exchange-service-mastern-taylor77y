@@ -24,7 +24,7 @@ public class SmartPoolOrder extends Model<SmartPoolOrder> {
     private static final long serialVersionUID = 1L;
 
     /** ID */
-    @TableId(value = "id", type = IdType.UUID)
+    @TableId("id")
     private Long id;
 
     /** 订单号（时间+6位随机数） */
@@ -79,16 +79,13 @@ public class SmartPoolOrder extends Model<SmartPoolOrder> {
     @TableField(  "enabled")
     private Integer enabled;
 
-    @TableField(  "product_name")
+    @TableField(exist = false)
     private String productName;
-
-    @TableField(  "product_name_en")
+    @TableField(exist = false)
     private String productNameEn;
-
-    @TableField(  "UID")
+    @TableField(exist = false)
     private String UID;
-
-    @TableField(  "U_name")
+    @TableField(exist = false)
     private String UName;
 
     /**

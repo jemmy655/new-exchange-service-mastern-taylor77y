@@ -44,19 +44,20 @@ public class FundOrderServiceImpl implements FundOrderService {
         wrapperMain.orderByAsc("create_time");
         List<FundOrder> fundOrders=fundOrderMapper.selectList(wrapperMain);
         for (FundOrder f:fundOrders) {
-            FundProduct fundProduct = fundProductMapper.selectById(f.getFundProductId());
-            //今日收益计算公式 =金额*今日利率
-            BigDecimal price=f.getPrice().multiply(fundProduct.getTodayRate());
-           if (f.getResidueDay()==0){
-               f.setEnabled(1);
-               fundOrderMapper.updateById(f);
-               //改变账号余额
-               updateBalance("USDT",f.getMemberId(),f.getPrice().add(f.getAccumulatedIncome()));
-           }else {
-                f.setAccumulatedIncome(f.getAccumulatedIncome().add(price)); //修改收益率
-                f.setResidueDay(f.getResidueDay()-1);
-                fundOrderMapper.updateById(f);
-           }
+            FundOrder(f);
+        }
+    }
+
+    @Override
+    public void countSmartPoolYield() {
+        //查询所以 为赎回的订单
+        QueryWrapper<SmartPoolOrder> wrapperMain = new QueryWrapper<SmartPoolOrder>();
+        wrapperMain.eq("enabled", "0");
+        wrapperMain.le("value_date", new Date());
+        wrapperMain.orderByAsc("create_time");
+        List<SmartPoolOrder> fundOrders=smartPoolOrderMapper.selectList(wrapperMain);
+        for (SmartPoolOrder f:fundOrders) {
+            SmartPoolOrder(f);
         }
     }
     private void FundOrder(FundOrder f){
@@ -80,7 +81,6 @@ public class FundOrderServiceImpl implements FundOrderService {
         //今日收益计算公式 =金额*今日利率
         BigDecimal price=f.getPrice().multiply(smartPoolProduct.getTodayRate());
         f.setAccumulatedIncome(f.getAccumulatedIncome().add(price)); //修改收益率
-        f.setResidueDay(f.getResidueDay()-1);
         smartPoolOrderMapper.updateById(f);
         //改变账号余额
     }

@@ -60,4 +60,6 @@ public class SmartPoolOrderVo implements Serializable {
     private String UID;
 
     private String UName;
+
+    private String detail;
 }

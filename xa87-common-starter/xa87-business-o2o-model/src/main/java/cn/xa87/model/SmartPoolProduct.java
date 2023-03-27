@@ -99,4 +99,9 @@ public class SmartPoolProduct extends Model<SmartPoolProduct>
      */
     @TableField("update_time")
     private Date updateTime;
+    /**
+     * 产品信息
+     */
+    @TableField("detail")
+    private String detail;
 }

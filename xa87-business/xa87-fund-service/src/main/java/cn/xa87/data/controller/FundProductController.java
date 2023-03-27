@@ -32,8 +32,8 @@ public class FundProductController {
 
     @ApiOperation("获取用户的理财订单")
     @HeaderChecker(headerNames = {"token", "userId"})
-    @PostMapping(value = "/getFundOrderByUserId")
-    public Response getFundOrderByUserId(@RequestParam String userId,String status) {
+    @GetMapping(value = "/getFundOrderByUserId")
+    public Response getFundOrderByUserId(@RequestParam String userId,@RequestParam String status) {
         return Response.success(fundOrderService.getFundOrderByUserId(userId,status));
     }
 
@@ -54,14 +54,14 @@ public class FundProductController {
     @ApiOperation("买入理财产品")
     @HeaderChecker(headerNames = {"token", "userId"})
     @PostMapping(value = "/setFundOrderPurchase")
-    public Response setFundOrderPurchase(FundOrderVo fundOrderVo) {
+    public Response setFundOrderPurchase(@RequestBody FundOrderVo fundOrderVo) {
         return Response.success(fundOrderService.setFundOrderPurchase(fundOrderVo));
     }
 
     @ApiOperation("强赎回理财产品")
     @HeaderChecker(headerNames = {"token", "userId"})
     @PostMapping(value = "/setFundOrderRedeem")
-    public Response setFundOrderRedeem(FundOrderVo fundOrderVo) {
+    public Response setFundOrderRedeem(@RequestBody FundOrderVo fundOrderVo) {
         return Response.success(fundOrderService.setFundOrderRedeem(fundOrderVo));
     }
 }

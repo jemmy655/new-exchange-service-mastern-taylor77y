@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface FundOrderService extends IService<FundOrder> {
-    List<FundOrder> getFundOrderByUserId(String userId, String status);
+    List<Map<String,Object>> getFundOrderByUserId(String userId, String status);
 
     Boolean setFundOrderPurchase(FundOrderVo fundOrderVo);
 
