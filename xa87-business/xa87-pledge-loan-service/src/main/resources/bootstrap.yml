@@ -1,9 +1,9 @@
 server:
-  port: 8775
+  port: 8742
 
 spring:
   application:
-    name: xa87-otc-service
+    name: xa87-pledge-loan-service
   profiles:
     active: show
 
@@ -21,9 +21,9 @@ spring:
         server-addr: 192.168.2.15:8848
         namespace: 8dfa2159-fda6-4be1-b649-58db1a473a0f
       config:
+        server-addr: 192.168.2.15:8848
         file-extension: yml
         shared-dataids: application-${spring.profiles}.yml
-        server-addr: 192.168.2.15:8848
         namespace: 8dfa2159-fda6-4be1-b649-58db1a473a0f
 ---
 spring:
