@@ -4,15 +4,9 @@ import cn.xa87.common.constants.CacheConstants;
 import cn.xa87.common.exception.BusinessException;
 import cn.xa87.common.redis.lock.RedisDistributedLock;
 import cn.xa87.common.redis.template.Xa87RedisRepository;
-import cn.xa87.job.mapper.BalanceMapper;
-import cn.xa87.job.mapper.BalanceRecordMapper;
-import cn.xa87.job.mapper.FundOrderMapper;
-import cn.xa87.job.mapper.FundProductMapper;
+import cn.xa87.job.mapper.*;
 import cn.xa87.job.service.FundOrderService;
-import cn.xa87.model.Balance;
-import cn.xa87.model.BalanceRecord;
-import cn.xa87.model.FundOrder;
-import cn.xa87.model.FundProduct;
+import cn.xa87.model.*;
 import cn.xa87.vo.FundOrderVo;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.AllArgsConstructor;
@@ -29,6 +23,12 @@ public class FundOrderServiceImpl implements FundOrderService {
     private FundOrderMapper fundOrderMapper;
     @Autowired
     private FundProductMapper fundProductMapper;
+
+    @Autowired
+    private SmartPoolOrderMapper smartPoolOrderMapper;
+
+    @Autowired
+    private SmartPoolProductMapper smartPoolProductMapper;
     @Autowired
     private BalanceRecordMapper balanceRecordMapper;
     @Autowired
@@ -51,7 +51,7 @@ public class FundOrderServiceImpl implements FundOrderService {
                f.setEnabled(1);
                fundOrderMapper.updateById(f);
                //改变账号余额
-               updateBalance(f.getMemberId(),f.getPrice().add(f.getAccumulatedIncome()));
+               updateBalance("USDT",f.getMemberId(),f.getPrice().add(f.getAccumulatedIncome()));
            }else {
                 f.setAccumulatedIncome(f.getAccumulatedIncome().add(price)); //修改收益率
                 f.setResidueDay(f.getResidueDay()-1);
@@ -59,20 +59,46 @@ public class FundOrderServiceImpl implements FundOrderService {
            }
         }
     }
+    private void FundOrder(FundOrder f){
+        FundProduct fundProduct = fundProductMapper.selectById(f.getFundProductId());
+        //今日收益计算公式 =金额*今日利率
+        BigDecimal price=f.getPrice().multiply(fundProduct.getTodayRate());
+        if (f.getResidueDay()==0){
+            f.setEnabled(1);
+            fundOrderMapper.updateById(f);
+            //改变账号余额
+            updateBalance("USDT",f.getMemberId(),f.getPrice().add(f.getAccumulatedIncome()));
+        }else {
+            f.setAccumulatedIncome(f.getAccumulatedIncome().add(price)); //修改收益率
+            f.setResidueDay(f.getResidueDay()-1);
+            fundOrderMapper.updateById(f);
+        }
+    }
+
+    private void SmartPoolOrder(SmartPoolOrder f){
+        SmartPoolProduct smartPoolProduct = smartPoolProductMapper.selectById(f.getProductId());
+        //今日收益计算公式 =金额*今日利率
+        BigDecimal price=f.getPrice().multiply(smartPoolProduct.getTodayRate());
+        f.setAccumulatedIncome(f.getAccumulatedIncome().add(price)); //修改收益率
+        f.setResidueDay(f.getResidueDay()-1);
+        smartPoolOrderMapper.updateById(f);
+        //改变账号余额
+    }
+
     /**
      * 增加金额
      * @param userId
      * @param price
      * @return
      */
-    private BigDecimal updateBalance(String userId,BigDecimal price) {
+    private BigDecimal updateBalance(String buyPairName,String userId,BigDecimal price) {
         RedisDistributedLock redisDistributedLock = new RedisDistributedLock(redisRepository.getRedisTemplate());
         boolean lock_coin = redisDistributedLock.lock(
                 CacheConstants.MEMBER_BALANCE_COIN_KEY + CacheConstants.SPLIT + userId, 5000, 50,
                 100);
         if (lock_coin) {
             QueryWrapper<Balance> wrapperMain = new QueryWrapper<Balance>();
-            wrapperMain.eq("currency", "USDT");
+            wrapperMain.eq("currency", buyPairName);
             wrapperMain.eq("user_id", userId);
             Balance balanceMain = balanceMapper.selectOne(wrapperMain);
             if (balanceMain==null){
@@ -86,7 +112,7 @@ public class FundOrderServiceImpl implements FundOrderService {
             saveBalanceRecord(userId,"USDT",11,1,
                     assetsBalance,balanceMain.getAssetsBalance(),price);
         } else {
-            updateBalance(userId,price);
+            updateBalance(buyPairName,userId,price);
         }
         //不使用
         return new BigDecimal(0.00);

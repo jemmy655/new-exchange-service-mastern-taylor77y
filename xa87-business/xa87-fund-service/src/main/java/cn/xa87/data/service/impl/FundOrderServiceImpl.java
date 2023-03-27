@@ -6,29 +6,30 @@ import cn.xa87.common.redis.lock.RedisDistributedLock;
 import cn.xa87.common.redis.template.Xa87RedisRepository;
 import cn.xa87.common.utils.DataUtils;
 import cn.xa87.common.utils.OrderUtils;
-import cn.xa87.constant.AjaxResultEnum;
 import cn.xa87.data.mapper.BalanceMapper;
 import cn.xa87.data.mapper.BalanceRecordMapper;
 import cn.xa87.data.mapper.FundOrderMapper;
 import cn.xa87.data.mapper.FundProductMapper;
 import cn.xa87.data.service.FundOrderService;
-import cn.xa87.data.service.FundProductService;
 import cn.xa87.model.Balance;
 import cn.xa87.model.BalanceRecord;
 import cn.xa87.model.FundOrder;
 import cn.xa87.model.FundProduct;
+import cn.xa87.vo.OrderCheck;
 import cn.xa87.vo.FundOrderVo;
-import cn.xa87.vo.PerpetualContractOrderVO;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+@Service
 public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder> implements FundOrderService {
     @Autowired
     private FundProductMapper fundProductMapper;
@@ -58,7 +59,7 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
         }
 
         FundOrder fundOrder = new FundOrder(
-                OrderUtils.getCode(),
+                fundOrderVo.getOrderNumber(),
                 fundOrderVo.getFundProductId(),
                 fundOrderVo.getMemberId(),
                 fundOrderVo.getValueDate(),
@@ -67,7 +68,7 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
                 fundOrderVo.getResidueDay(),
                 fundOrderVo.getPrice(),
                 new BigDecimal(0.00),
-                fundOrderVo.getPenalPrice(),
+                fundProduct.getDefaultRatio().multiply(new BigDecimal(fundOrderVo.getResidueDay())).multiply(fundOrderVo.getPrice()),
                 0,
                 new Date(),
                 null
@@ -89,7 +90,7 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
             throw new BusinessException("基金产品不存在，请检查id是否正确");
         }
         FundOrder fundOrder=this.baseMapper.selectById(fundOrderVo.getId());
-        if (fundProduct == null) {
+        if (fundOrder == null) {
             throw new BusinessException("订单不存在，请检查id是否正确");
         }
         //计算违约金
@@ -126,6 +127,59 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
         //改变账号余额
         updateBalance(fundOrder.getMemberId(),fundOrder.getPrice().add(fundOrder.getAccumulatedIncome()));
         return true;
+    }
+
+    @Override
+    public OrderCheck getCheckFundOrder(String productId) {
+        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd");
+        FundProduct fundProduct = fundProductMapper.selectById(productId);
+        if (fundProduct == null) {
+            throw new BusinessException("基金产品不存在，请检查id是否正确");
+        }
+        OrderCheck fundOrderCheck=new OrderCheck();
+        fundOrderCheck.setName(fundProduct.getZhName());
+        fundOrderCheck.setMinx(fundProduct.getInvestmentAmountBehind());
+        fundOrderCheck.setMin(fundProduct.getInvestmentAmountFront());
+        fundOrderCheck.setBuyDate(new Date());
+        fundOrderCheck.setStartDate(DataUtils.addDays(sdf1.format(new Date()),"yyyy-MM-dd",1));
+        fundOrderCheck.setDistribute("每天");
+        fundOrderCheck.setEndDate(DataUtils.addDays(sdf1.format(fundOrderCheck.getStartDate()),"yyyy-MM-dd",fundProduct.getPeriodDay()));
+        fundOrderCheck.setPredictRate(fundProduct.getDayRateFront()+"~"+fundProduct.getDayRateBehind());
+        fundOrderCheck.setRansomRate(fundProduct.getDefaultRatio()+"%");
+        fundOrderCheck.setTodayRate(fundProduct.getTodayRate()+"%");
+        return fundOrderCheck;
+    }
+
+    @Override
+    public Map<String, Object> getCountFundOrderByUserId(String userId) {
+
+        Map<String,Object> map=new HashMap<>();
+        QueryWrapper<FundOrder> wrapper=new QueryWrapper<>();
+        wrapper.eq("member_id",userId);
+        wrapper.eq("enabled",0);
+        List<FundOrder> fundOrder=this.baseMapper.selectList(wrapper);
+        BigDecimal toPrice=new BigDecimal(0);
+        BigDecimal dayPrice=new BigDecimal(0);
+        BigDecimal addUpPrice=new BigDecimal(0);
+        for (FundOrder f: fundOrder) {
+            BigDecimal a=new BigDecimal(0);
+            FundProduct fundProduct = fundProductMapper.selectById(f.getFundProductId());
+            if (fundProduct == null) {
+
+            }else {
+                if (!f.getValueDate().equals(new Date())) { //新建订单没有收益
+                    a = f.getPrice().multiply(fundProduct.getTodayRate());
+                }
+            }
+            toPrice=toPrice.add(f.getPrice());
+            dayPrice = dayPrice.add(a);
+            addUpPrice.add(f.getAccumulatedIncome());
+        }
+        map.put("toPrice",toPrice);
+        map.put("dayPrice",dayPrice);
+        map.put("addUpPrice",addUpPrice);
+        map.put("size",fundOrder.size());
+        return map;
     }
 
     /**

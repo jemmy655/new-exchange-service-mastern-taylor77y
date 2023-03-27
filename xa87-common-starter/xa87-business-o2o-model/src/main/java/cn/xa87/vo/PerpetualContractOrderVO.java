@@ -8,12 +8,13 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
 @ApiModel(description = "永续合约实体类")
-public class PerpetualContractOrderVO {
+public class PerpetualContractOrderVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
     /**
@@ -119,7 +120,7 @@ public class PerpetualContractOrderVO {
     private String leverDesc;
 
     /**
-     * 结算状态（委托完成 ENTRUSTCOMPLETE,持仓 POSITIONS  已平仓 ClLOSEOUT）
+     * 结算状态（委托完成 ENTRUSTCOMPLETE,持仓 POSITIONS  已平仓 CLOSEOUT）
      */
     private String orderState;
 

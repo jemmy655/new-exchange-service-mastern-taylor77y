@@ -6,6 +6,7 @@ import cn.xa87.model.FundProduct;
 import cn.xa87.model.PerpetualContractOrder;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author Administrator
  */
+@Service
 public class FundProductServiceImpl  extends ServiceImpl<FundProductMapper, FundProduct> implements FundProductService {
     @Override
     public List<FundProduct> getFundProduct() {

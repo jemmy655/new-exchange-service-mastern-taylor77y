@@ -121,10 +121,10 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
         vo.setMemberId(balanceMain.getMemberId());
         vo.setMargin(balanceMain.getMargin());
         //退回金额
-        //修改状态为已平仓 ClLOSEOUT
+        //修改状态为已平仓 CLOSEOUT
         BigDecimal margin= balanceMain.getAmount().add(balanceMain.getProfit());//扣除金额
         updateBalance(vo,margin);
-        balanceMain.setOrderState("ClLOSEOUT");
+        balanceMain.setOrderState("CLOSEOUT");
         balanceMain.setMargin(new BigDecimal(0.00000));//保证金减少并且为0
         balanceMain.setBPrice(new BigDecimal(price));//结束价格
         balanceMain.setUsableControlHands(new BigDecimal(0));
@@ -147,10 +147,10 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
             vo.setMemberId(b.getMemberId());
             vo.setMargin(b.getMargin());
             //退回金额
-            //修改状态为已平仓 ClLOSEOUT
+            //修改状态为已平仓 CLOSEOUT
             BigDecimal margin= b.getAmount().add(b.getProfit());//扣除金额
             updateBalance(vo,margin);
-            b.setOrderState("ClLOSEOUT");
+            b.setOrderState("CLOSEOUT");
             b.setMargin(new BigDecimal(0.00000));//保证金减少并且为0
             b.setBPrice(new BigDecimal(price));//结束价格
             b.setUsableControlHands(new BigDecimal(0));
@@ -234,7 +234,7 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
         List<Object> list=new LinkedList<>();
         DecimalFormat df = new DecimalFormat("0.00%");
         QueryWrapper<PerpetualContractOrder> wrapperMain = new QueryWrapper<PerpetualContractOrder>();
-        wrapperMain.eq("order_state", "ClLOSEOUT"); //状态为持仓
+        wrapperMain.eq("order_state", "CLOSEOUT"); //状态为持仓
         wrapperMain.eq("member_id", member);
         wrapperMain.orderByDesc("create_time");
         List<PerpetualContractOrder> balanceMain = perpetualContractOrderMapper.selectList(wrapperMain);
@@ -275,10 +275,10 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
             if (per.getContractHands().compareTo(perpetualContractOrder.getContractHands())==0){ //等于要扣除的手数
                 //退回金额
                 perpetualContractOrder.getContractHands().subtract(per.getContractHands());//减少手数
-                //修改状态为已平仓 ClLOSEOUT
+                //修改状态为已平仓 CLOSEOUT
                 BigDecimal margin= per.getAmount().add(per.getProfit());//扣除金额
                 updateBalance(perpetualContractOrder,margin);
-                per.setOrderState("ClLOSEOUT");
+                per.setOrderState("CLOSEOUT");
                 per.setMargin(new BigDecimal(0.00000));//保证金减少并且为0
                 per.setBPrice(perpetualContractOrder.getKPrice());//结束价格
                 per.setUsableControlHands(new BigDecimal(0));
@@ -289,10 +289,10 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
             if (per.getContractHands().compareTo(perpetualContractOrder.getContractHands())==-1){ //小于要扣除的手数
                 //退回金额
                 perpetualContractOrder.getContractHands().subtract(per.getContractHands());//减少手数
-                //修改状态为已平仓 ClLOSEOUT
+                //修改状态为已平仓 CLOSEOUT
                 BigDecimal margin= perpetualContractOrder.getAmount().add(per.getProfit());//扣除金额
                 updateBalance(perpetualContractOrder,margin);//还有持仓手数 不减少 收益
-                per.setOrderState("ClLOSEOUT");
+                per.setOrderState("CLOSEOUT");
                 per.setBPrice(perpetualContractOrder.getKPrice());
                 per.setMargin(new BigDecimal(0.00000));//保证金减少并且为0
                 per.setUsableControlHands(new BigDecimal(0));
@@ -303,7 +303,7 @@ public class PerpetualContractOrderServiceImpl extends ServiceImpl<PerpetualCont
 
                 //退回金额
                 perpetualContractOrder.getContractHands().subtract(per.getContractHands());//减少手数
-                //修改状态为已平仓 ClLOSEOUT
+                //修改状态为已平仓 CLOSEOUT
                 BigDecimal a=perpetualContractOrder.getContractHands().multiply(new BigDecimal(1000));//要减少的金额
 
                 updateBalance(perpetualContractOrder,a);//还有持仓手数 不减少 收益

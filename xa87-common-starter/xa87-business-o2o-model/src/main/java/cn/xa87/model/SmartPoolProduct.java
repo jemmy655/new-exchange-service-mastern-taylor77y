@@ -1,5 +1,9 @@
 package cn.xa87.model;
 
+import java.math.BigDecimal;
+import java.util.Date;
+
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -7,78 +11,82 @@ import com.baomidou.mybatisplus.extension.activerecord.Model;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
-import java.util.Date;
-
+/**
+ * 【请填写功能名称】对象 t_smart_pool_product
+ * 
+ * @author ruoyi
+ * @date 2023-03-26
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_fund_product")
-public class FundProduct extends Model<FundProduct> {
-
+@TableName("t_smart_pool_product")
+public class SmartPoolProduct extends Model<SmartPoolProduct>
+{
     private static final long serialVersionUID = 1L;
 
     /** ID */
-    @TableId("id")
+    @TableId(value = "id", type = IdType.UUID)
     private Long id;
 
     /** 简体名称 */
-    @TableField("zh_name")
+     @TableField(  "zh_name")
+    
     private String zhName;
 
     /** 繁体名称 */
-    @TableField("zh_tw_name")
+     @TableField(  "zh_tw_name")
     private String zhTwName;
 
     /** 英文名称 */
-    @TableField("en_name")
+     @TableField(  "en_name")
     private String enName;
 
     /** 韩文名称 */
-    @TableField("ko_name")
+     @TableField(  "ko_name")
     private String koName;
 
     /** 日文名称 */
-    @TableField("ja_name")
+     @TableField(  "ja_name")
     private String jaName;
 
-    /** 产品图片 */
-    @TableField("fund_image")
-    private String fundImage;
+    /** 矿机购买币种 */
+     @TableField(  "buy_pairs_name")
+    private String buyPairsName;
+
+    /** 矿机产出币种 */
+     @TableField(  "out_pairs_name")
+    private String outPairsName;
 
     /** 周期（天） */
-    @TableField("period_day")
+     @TableField(  "period_day")
     private Integer periodDay;
 
-    /** 日利率%（前） */
-    @TableField("day_rate_front")
-    private BigDecimal dayRateFront;
+    /** 可解锁周期(天) */
+     @TableField(  "period_day_unlock")
+    private Integer periodDayUnlock;
 
-    /** 日利率%(后) */
-    @TableField("day_rate_behind")
-    private BigDecimal dayRateBehind;
+    /** 日利率% */
+     @TableField(  "day_rate")
+    private BigDecimal dayRate;
 
     /** 今日利率% */
-    @TableField("today_rate")
+     @TableField(  "today_rate")
     private BigDecimal todayRate;
 
-    /** 违约结算比列% */
-    @TableField("default_ratio")
-    private BigDecimal defaultRatio;
-
     /** 投资金额USDT（小） */
-    @TableField("investment_amount_front")
+     @TableField(  "investment_amount_front")
     private BigDecimal investmentAmountFront;
 
     /** 投资金额USDT（大） */
-    @TableField("investment_amount_behind")
+     @TableField(  "investment_amount_behind")
     private BigDecimal investmentAmountBehind;
 
     /** 数量限制 */
-    @TableField("num_astrict")
+     @TableField(  "num_astrict")
     private Integer numAstrict;
 
     /** 状态(0停用，1启用) */
-    @TableField("enabled")
+     @TableField(  "enabled")
     private Integer enabled;
 
     /**

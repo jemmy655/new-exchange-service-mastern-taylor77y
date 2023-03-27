@@ -37,6 +37,20 @@ public class FundProductController {
         return Response.success(fundOrderService.getFundOrderByUserId(userId,status));
     }
 
+    @ApiOperation("获取确认订单信息")
+    @HeaderChecker(headerNames = {"token", "userId"})
+    @PostMapping(value = "/getCheckFundOrder")
+    public Response getCheckFundOrder(@RequestParam String productId) {
+        return Response.success(fundOrderService.getCheckFundOrder(productId));
+    }
+
+    @ApiOperation("获取用户购买基金统计信息")
+    @HeaderChecker(headerNames = {"token", "userId"})
+    @PostMapping(value = "/getCountFundOrderByUserId")
+    public Response getCountFundOrderByUserId(@RequestParam String userId) {
+        return Response.success(fundOrderService.getCountFundOrderByUserId(userId));
+    }
+
     @ApiOperation("买入理财产品")
     @HeaderChecker(headerNames = {"token", "userId"})
     @PostMapping(value = "/setFundOrderPurchase")

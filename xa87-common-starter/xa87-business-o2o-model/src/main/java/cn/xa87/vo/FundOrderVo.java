@@ -74,4 +74,5 @@ public class FundOrderVo implements Serializable {
      */
     @ApiModelProperty(value ="修改时间")
     private Date updateTime;
+
 }

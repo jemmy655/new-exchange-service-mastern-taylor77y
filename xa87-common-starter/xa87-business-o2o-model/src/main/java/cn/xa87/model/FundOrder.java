@@ -21,7 +21,7 @@ public class FundOrder extends Model<FundOrder> {
     private Long id;
 
     /** 订单号（时间+6位随机数） */
-    @TableField("order_name")
+    @TableField("order_number")
     private String orderNumber;
 
     /** 基金产品Id */
