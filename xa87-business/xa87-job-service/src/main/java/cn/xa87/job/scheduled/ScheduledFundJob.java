@@ -24,5 +24,6 @@ public class ScheduledFundJob {
     public void countFundYield(){
         fundOrderService.countFundYield();
         fundOrderService.countSmartPoolYield();
+        fundOrderService.PledgeOrderYield();
     }
 }

@@ -18,7 +18,7 @@ public class FundOrderVo implements Serializable {
 
     /** ID */
     @ApiModelProperty(value = "ID")
-    private Long id;
+    private String id;
 
     /** 订单号（时间+6位随机数） */
     @ApiModelProperty(value = "订单号")
@@ -26,7 +26,7 @@ public class FundOrderVo implements Serializable {
 
     /** 基金产品Id */
     @ApiModelProperty(value = "基金产品Id")
-    private Long fundProductId;
+    private String fundProductId;
 
     /** 会员id */
     @ApiModelProperty(value = "用户id")

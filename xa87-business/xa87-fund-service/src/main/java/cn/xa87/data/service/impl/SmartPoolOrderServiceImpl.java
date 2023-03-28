@@ -111,7 +111,7 @@ public class SmartPoolOrderServiceImpl extends ServiceImpl<SmartPoolOrderMapper,
             throw new BusinessException("产品不存在，请检查id是否正确");
         }
         SmartPoolOrder fundOrder = new SmartPoolOrder(
-                fundOrderVo.getOrderNumber(),
+                OrderUtils.getCode(),
                 fundOrderVo.getProductId(),
                 fundOrderVo.getMemberId(),
                 fundOrderVo.getValueDate(),

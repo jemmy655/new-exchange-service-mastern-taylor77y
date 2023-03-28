@@ -24,8 +24,8 @@ public class SmartPoolOrder extends Model<SmartPoolOrder> {
     private static final long serialVersionUID = 1L;
 
     /** ID */
-    @TableId("id")
-    private Long id;
+    @TableId(value = "id", type = IdType.UUID)
+    private String id;
 
     /** 订单号（时间+6位随机数） */
     @TableField(  "order_number")
@@ -33,7 +33,7 @@ public class SmartPoolOrder extends Model<SmartPoolOrder> {
 
     /** 基金产品Id */
     @TableField(  "product_id")
-    private Long productId;
+    private String productId;
 
     /** 会员id */
     @TableField(  "member_id")
@@ -102,7 +102,7 @@ public class SmartPoolOrder extends Model<SmartPoolOrder> {
     public SmartPoolOrder() {
     }
 
-    public SmartPoolOrder(String orderNumber, Long productId, String memberId, Date valueDate, Date finishValueDate, Integer periodDay, Integer residueDay, BigDecimal price, BigDecimal accumulatedIncome, BigDecimal penalPrice, Date startTime, Date endTime, Integer enabled, String productName, String productNameEn, String UID, String UName, Date createTime, Date updateTime) {
+    public SmartPoolOrder(String orderNumber, String productId, String memberId, Date valueDate, Date finishValueDate, Integer periodDay, Integer residueDay, BigDecimal price, BigDecimal accumulatedIncome, BigDecimal penalPrice, Date startTime, Date endTime, Integer enabled, String productName, String productNameEn, String UID, String UName, Date createTime, Date updateTime) {
         this.orderNumber = orderNumber;
         this.productId = productId;
         this.memberId = memberId;

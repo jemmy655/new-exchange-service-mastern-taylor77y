@@ -37,6 +37,12 @@ public class DataUtils {
         return formatter.parse(dateString);
     }
 
+    public static boolean isDate(Date date1,Date date2){
+        SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
+        return fmt.format(date1).equals(fmt.format(date2));
+    }
+
+
     /**
      * 指定天数后的时间
      * @param dateTimeStr 表示要处理的日期或日期时间字符串

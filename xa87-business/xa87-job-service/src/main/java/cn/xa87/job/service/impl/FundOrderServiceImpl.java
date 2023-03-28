@@ -4,6 +4,7 @@ import cn.xa87.common.constants.CacheConstants;
 import cn.xa87.common.exception.BusinessException;
 import cn.xa87.common.redis.lock.RedisDistributedLock;
 import cn.xa87.common.redis.template.Xa87RedisRepository;
+import cn.xa87.common.utils.DataUtils;
 import cn.xa87.job.mapper.*;
 import cn.xa87.job.service.FundOrderService;
 import cn.xa87.model.*;
@@ -29,6 +30,9 @@ public class FundOrderServiceImpl implements FundOrderService {
 
     @Autowired
     private SmartPoolProductMapper smartPoolProductMapper;
+
+    @Autowired
+    private PledgeOrderMapper pledgeOrderMapper;
     @Autowired
     private BalanceRecordMapper balanceRecordMapper;
     @Autowired
@@ -60,6 +64,26 @@ public class FundOrderServiceImpl implements FundOrderService {
             SmartPoolOrder(f);
         }
     }
+
+    @Override
+    public void PledgeOrderYield() {
+        QueryWrapper<PledgeOrder> wrapperMain = new QueryWrapper<PledgeOrder>();
+        wrapperMain.eq("status", "0");
+        wrapperMain.le("value_date", new Date());
+        wrapperMain.orderByAsc("create_time");
+        List<PledgeOrder> fundOrders=pledgeOrderMapper.selectList(wrapperMain);
+        for (PledgeOrder f:fundOrders) {
+            if (DataUtils.isDate(new Date(),f.getExpireTime())){ //判断是否为今天
+                f.setStatus(1);
+                pledgeOrderMapper.updateById(f);
+                //改变账号余额
+                openBalance(f.getBorrowName(),f.getMemberId(),f.getBorrowMoney());
+                updateBalance(f.getPledgeName(),f.getMemberId(),f.getPledgeMoney());
+            }
+        }
+    }
+
+
     private void FundOrder(FundOrder f){
         FundProduct fundProduct = fundProductMapper.selectById(f.getFundProductId());
         //今日收益计算公式 =金额*今日利率
@@ -116,6 +140,40 @@ public class FundOrderServiceImpl implements FundOrderService {
         }
         //不使用
         return new BigDecimal(0.00);
+    }
+
+    /**
+     * 减少金额
+     *
+     * @param userId
+     * @param price  要增加的金额
+     * @return
+     */
+    private Boolean openBalance(String buyPairName,String userId, BigDecimal price) {
+        RedisDistributedLock redisDistributedLock = new RedisDistributedLock(redisRepository.getRedisTemplate());
+        boolean lock_coin = redisDistributedLock.lock(
+                CacheConstants.MEMBER_BALANCE_COIN_KEY + CacheConstants.SPLIT + userId, 5000, 50,
+                100);
+        if (lock_coin) {
+            QueryWrapper<Balance> wrapperMain = new QueryWrapper<Balance>();
+            wrapperMain.eq("currency", buyPairName);
+            wrapperMain.eq("user_id", userId);
+            Balance balanceMain = balanceMapper.selectOne(wrapperMain);
+            if (balanceMain == null) {
+                throw new BusinessException("用户账号不存在");
+            }
+            BigDecimal assetsBalance = balanceMain.getAssetsBalance();
+            balanceMain.setAssetsBalance(assetsBalance.subtract(price));
+            balanceMapper.updateById(balanceMain);
+            redisDistributedLock.releaseLock(CacheConstants.MEMBER_BALANCE_COIN_KEY + CacheConstants.SPLIT + balanceMain.getUserId());
+            // 资金减少记录
+            saveBalanceRecord(userId, buyPairName, 10, 1,
+                    assetsBalance, balanceMain.getAssetsBalance(), price);
+        } else {
+            openBalance(buyPairName,userId, price);
+        }
+        //不使用
+        return true;
     }
 
 

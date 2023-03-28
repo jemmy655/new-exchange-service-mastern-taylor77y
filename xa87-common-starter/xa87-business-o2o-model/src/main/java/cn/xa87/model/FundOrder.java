@@ -1,5 +1,6 @@
 package cn.xa87.model;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -17,8 +18,8 @@ public class FundOrder extends Model<FundOrder> {
     private static final long serialVersionUID = 1L;
 
     /** ID */
-    @TableId("id")
-    private Long id;
+    @TableId(value = "id", type = IdType.UUID)
+    private String id;
 
     /** 订单号（时间+6位随机数） */
     @TableField("order_number")
@@ -26,7 +27,7 @@ public class FundOrder extends Model<FundOrder> {
 
     /** 基金产品Id */
     @TableField("fund_product_id")
-    private Long fundProductId;
+    private String fundProductId;
 
     /** 会员id */
     @TableField("member_id")
@@ -78,7 +79,7 @@ public class FundOrder extends Model<FundOrder> {
     public FundOrder() {
     }
 
-    public FundOrder(String orderNumber, Long fundProductId, String memberId, Date valueDate, Date finishValueDate, Integer periodDay, Integer residueDay, BigDecimal price, BigDecimal accumulatedIncome, BigDecimal penalPrice, Integer enabled, Date createTime, Date updateTime) {
+    public FundOrder(String orderNumber, String fundProductId, String memberId, Date valueDate, Date finishValueDate, Integer periodDay, Integer residueDay, BigDecimal price, BigDecimal accumulatedIncome, BigDecimal penalPrice, Integer enabled, Date createTime, Date updateTime) {
         this.orderNumber = orderNumber;
         this.fundProductId = fundProductId;
         this.memberId = memberId;

@@ -65,7 +65,7 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
         }
 
         FundOrder fundOrder = new FundOrder(
-                fundOrderVo.getOrderNumber(),
+                OrderUtils.getCode(),
                 fundOrderVo.getFundProductId(),
                 fundOrderVo.getMemberId(),
                 fundOrderVo.getValueDate(),
@@ -246,7 +246,7 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
             balanceMain.setAssetsBalance(assetsBalance.add(price));
             balanceMapper.updateById(balanceMain);
             redisDistributedLock.releaseLock( CacheConstants.MEMBER_BALANCE_COIN_KEY + CacheConstants.SPLIT + balanceMain.getUserId());
-            // 资金减少记录
+            // 资金增加记录
             saveBalanceRecord(userId,"USDT",11,1,
                     assetsBalance,balanceMain.getAssetsBalance(),price);
         } else {

@@ -1,5 +1,6 @@
 package cn.xa87.model;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -18,8 +19,8 @@ public class FundProduct extends Model<FundProduct> {
     private static final long serialVersionUID = 1L;
 
     /** ID */
-    @TableId("id")
-    private Long id;
+    @TableId(value = "id", type = IdType.UUID)
+    private String id;
 
     /** 简体名称 */
     @TableField("zh_name")

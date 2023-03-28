@@ -12,13 +12,13 @@ import java.util.Date;
 @Data
 public class SmartPoolOrderVo implements Serializable {
     /** ID */
-    private Long id;
+    private String id;
 
     /** 订单号（时间+6位随机数） */
     private String orderNumber;
 
     /** 基金产品Id */
-    private Long productId;
+    private String productId;
 
     /** 会员id */
     private String memberId;

@@ -26,7 +26,7 @@ public class SmartPoolProduct extends Model<SmartPoolProduct>
 
     /** ID */
     @TableId(value = "id", type = IdType.UUID)
-    private Long id;
+    private String id;
 
     /** 简体名称 */
      @TableField(  "zh_name")
