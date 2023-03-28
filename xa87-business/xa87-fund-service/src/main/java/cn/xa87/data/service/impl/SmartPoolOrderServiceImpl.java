@@ -47,6 +47,9 @@ public class SmartPoolOrderServiceImpl extends ServiceImpl<SmartPoolOrderMapper,
             Map<String,Object> map= JSON.parseObject(JSON.toJSONString(f), Map.class);
             SmartPoolProduct fundProduct = smartPoolProductMapper.selectById(f.getProductId());
             map.put("name",fundProduct.getZhName());
+            map.put("todayPrice",f.getPrice().multiply(fundProduct.getDayRate()));
+            map.put("threePrice",f.getPrice().multiply(fundProduct.getDayRate()).multiply(new BigDecimal(30)));
+            map.put("dayRate",fundProduct.getDayRate());
             list.add(map);
         }
         return list;
