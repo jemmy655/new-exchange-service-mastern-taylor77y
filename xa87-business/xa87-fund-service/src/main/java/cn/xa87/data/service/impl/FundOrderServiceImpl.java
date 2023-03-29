@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -40,6 +41,7 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
 
     @Override
     public List<Map<String,Object>> getFundOrderByUserId(String userId, String status) {
+        DecimalFormat df = new DecimalFormat("#.##");
         List<Map<String,Object>> list=new ArrayList<>();
         QueryWrapper<FundOrder> wrapperMain = new QueryWrapper<FundOrder>();
         wrapperMain.eq("enabled", status);
@@ -52,8 +54,8 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
             map.put("fund_image",fundProduct.getFundImage());
             map.put("name",fundProduct.getZhName());
             map.put("todayMoney",f.getPrice().multiply(fundProduct.getTodayRate()));
-            map.put("rate",f.getPrice().multiply(fundProduct.getDayRateFront())+"%~"+f.getPrice().multiply(fundProduct.getDayRateBehind())+"%");
-            map.put("money",f.getPrice().multiply(fundProduct.getDayRateFront())+"~"+f.getPrice().multiply(fundProduct.getDayRateBehind())+"(USDT)");
+            map.put("rate",df.format(fundProduct.getDayRateFront())+"%~"+df.format(fundProduct.getDayRateBehind())+"%");
+            map.put("money",df.format(f.getPrice().multiply(fundProduct.getDayRateFront()))+"~"+df.format(f.getPrice().multiply(fundProduct.getDayRateBehind()))+"(USDT)");
             list.add(map);
         }
         return list;
