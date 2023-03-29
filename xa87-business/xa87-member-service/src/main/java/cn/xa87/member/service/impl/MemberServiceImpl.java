@@ -28,12 +28,10 @@ import com.google.common.collect.Lists;
 import com.xiaoleilu.hutool.collection.CollUtil;
 import com.xiaoleilu.hutool.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestAttributes;
@@ -868,6 +866,13 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
         return Response.success(billingAddressMapper.insert(billingAddress));
     }
 
+    /**
+     *
+     * @param member  用户id
+     * @param baId    提币id
+     * @param address
+     * @return
+     */
     @Override
     public Response updateBillingAddress(String member, Integer baId, String address) {
         BillingAddress billingAddress = billingAddressMapper.selectById(baId);
@@ -879,9 +884,17 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
     }
 
     @Override
-    public Response getBillingAddressList(String member) {
+    public Response getBillingAddressList(String member, String [] currency) {
+        String ids=null;
+        for (int i=0;i<currency.length;i++){
+            if (ids==null){
+                ids=currency[i];
+            }else {
+                ids += ',' + currency[i];
+            }
+        }
         QueryWrapper<BillingAddress> wrapper = new QueryWrapper<>();
-        wrapper.eq("member_id", member).orderByDesc("create_time");
+        wrapper.eq("member_id", member).in("currency", ids).orderByDesc("create_time");
         return Response.success(billingAddressMapper.selectList(wrapper));
     }
 

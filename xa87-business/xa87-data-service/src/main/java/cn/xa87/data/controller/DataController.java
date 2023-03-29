@@ -1,16 +1,13 @@
 package cn.xa87.data.controller;
 
-import cn.hutool.json.JSON;
-import cn.hutool.json.JSONUtil;
 import cn.xa87.common.utils.HttpUtil;
 import cn.xa87.common.web.Response;
 import cn.xa87.constant.CoinConstant;
 import cn.xa87.constant.DataConstant;
 import cn.xa87.data.mapper.ShareImgMapper;
 import cn.xa87.data.service.DataService;
-import cn.xa87.model.Balance;
-import cn.xa87.model.DepositHistory;
 import cn.xa87.model.ShareImg;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -19,9 +16,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 @Slf4j
 @Api(value = "获取主页信息", tags = {"获取主页信息"})
 @RestController
@@ -65,11 +64,30 @@ public class DataController {
         return Response.success(dataService.getIndexCoin(getCoinType));
     }
 
-    @ApiOperation("获取主页币列表/3个币(TOP)/涨幅榜(UPDOWN)/成交榜(VOLUME)/新币榜(PROJECT)")
+//    @ApiOperation("获取主页币列表/3个币(TOP)/涨幅榜(UPDOWN)/成交榜(VOLUME)/新币榜(PROJECT)")
+//    @GetMapping(value = "/getIndexCoinNew")
+//    public Response getIndexCoinNew() {
+//        String res = HttpUtil.doGet("https://db23app.vip/wap/api/hobi!getRealtime.action?symbol=btc,eth,algo,mln,dot,neo,iota,yfi,etc,xrp,axs,sand,ltc,mana,sol,eos,bhd,link,mx,chr,chz");
+//        return Response.success(res);
+//    }
+
+    @ApiOperation("新获取主页币列表/3个币(TOP)/涨幅榜(UPDOWN)/成交榜(VOLUME)/新币榜(PROJECT)")
     @GetMapping(value = "/getIndexCoinNew")
-    public Response getIndexCoinNew() {
+    public Response getIndexCoinNew2() {
+        List<Object> list = new ArrayList<>();
         String res = HttpUtil.doGet("https://db23app.vip/wap/api/hobi!getRealtime.action?symbol=btc,eth,algo,mln,dot,neo,iota,yfi,etc,xrp,axs,sand,ltc,mana,sol,eos,bhd,link,mx,chr,chz");
-        return Response.success(res);
+        String res2 = HttpUtil.doGet("https://advchainex.com/wap/api/realtime!execute.action?symbol=dai,kre,apd,ada,xtz,doge,shib,qxg,yfii,qtum,tl,sushi,xtg,zyq,op,aave,knc,comp,tmx,lrc,atom,iotx,mx,blz,bal,beth,atf,ape&order=asc");
+        JSONObject jsonObject = JSONObject.parseObject(res);
+        JSONObject jsonObject2 = JSONObject.parseObject(res2);
+        if(jsonObject != null){
+            List<Object> list1= (List<Object>) jsonObject.get("data");
+            list.addAll(list1);
+        }
+        if(jsonObject2 != null){
+            List<Object> list2= (List<Object>) jsonObject2.get("data");
+            list.addAll(list2);
+        }
+        return Response.success(list);
     }
 
     @ApiOperation("行情列表")

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -265,8 +266,8 @@ public class MemberController {
     @ApiOperation("获取收款地址列表")
     @HeaderChecker(headerNames = {"token", "userId"})
     @GetMapping(value = "/getBillingAddressList")
-    public Response getBillingAddressList(@RequestParam String member) {
-        return Response.success(memberService.getBillingAddressList(member));
+    public Response getBillingAddressList(@RequestParam String member,String [] currency) {
+        return Response.success(memberService.getBillingAddressList(member, currency));
     }
 
     @ApiOperation("忘记密码修改")

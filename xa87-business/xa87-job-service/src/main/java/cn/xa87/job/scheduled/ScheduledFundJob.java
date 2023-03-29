@@ -18,7 +18,7 @@ public class ScheduledFundJob {
 
     /**
      * 计算理财收益率 和 结束时间
-     * 计算理智能挖矿收益
+     * 计算理智能挖矿收益  0 0 1 * * ?
      */
     @Scheduled(cron = "0 0 1 * * ?")
     public void countFundYield(){

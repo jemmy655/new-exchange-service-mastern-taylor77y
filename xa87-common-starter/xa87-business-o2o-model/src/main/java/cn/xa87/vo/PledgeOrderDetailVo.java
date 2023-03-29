@@ -34,7 +34,8 @@ public class PledgeOrderDetailVo implements Serializable {
      * 借款金额，还款金额
      */
     @ApiModelProperty(value ="借款金额，还款金额")
-    private BigDecimal money;
+    private BigDecimal money =new BigDecimal(0);
+
 
     /**
      * 质押类型
@@ -46,7 +47,7 @@ public class PledgeOrderDetailVo implements Serializable {
      * 质押金额
      */
     @ApiModelProperty(value ="质押金额")
-    private BigDecimal pledgePrice;
+    private BigDecimal pledgePrice =new BigDecimal(0);
 
     @ApiModelProperty(value ="质押币名称")
     private String pledgeName;

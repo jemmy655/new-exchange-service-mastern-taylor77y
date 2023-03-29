@@ -51,6 +51,9 @@ public class FundOrderServiceImpl extends ServiceImpl<FundOrderMapper, FundOrder
             FundProduct fundProduct = fundProductMapper.selectById(f.getFundProductId());
             map.put("fund_image",fundProduct.getFundImage());
             map.put("name",fundProduct.getZhName());
+            map.put("todayMoney",f.getPrice().multiply(fundProduct.getTodayRate()));
+            map.put("rate",f.getPrice().multiply(fundProduct.getDayRateFront())+"%~"+f.getPrice().multiply(fundProduct.getDayRateBehind())+"%");
+            map.put("money",f.getPrice().multiply(fundProduct.getDayRateFront())+"~"+f.getPrice().multiply(fundProduct.getDayRateBehind())+"(USDT)");
             list.add(map);
         }
         return list;

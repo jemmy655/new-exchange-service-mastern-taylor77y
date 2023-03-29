@@ -69,15 +69,14 @@ public class FundOrderServiceImpl implements FundOrderService {
     public void PledgeOrderYield() {
         QueryWrapper<PledgeOrder> wrapperMain = new QueryWrapper<PledgeOrder>();
         wrapperMain.eq("status", "0");
-        wrapperMain.le("value_date", new Date());
-        wrapperMain.orderByAsc("create_time");
+        wrapperMain.orderByAsc("creation_time");
         List<PledgeOrder> fundOrders=pledgeOrderMapper.selectList(wrapperMain);
         for (PledgeOrder f:fundOrders) {
             if (DataUtils.isDate(new Date(),f.getExpireTime())){ //判断是否为今天
                 f.setStatus(1);
                 pledgeOrderMapper.updateById(f);
                 //改变账号余额
-                openBalance(f.getBorrowName(),f.getMemberId(),f.getBorrowMoney());
+                openBalance(f.getBorrowName(),f.getMemberId(),f.getBorrowMoney().subtract(f.getRefundPrice()).add(f.getTotalMoney())); //总借款 - 已还款 + 总利息
                 updateBalance(f.getPledgeName(),f.getMemberId(),f.getPledgeMoney());
             }
         }

@@ -22,10 +22,9 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_pledge-order")
+@TableName("t_pledge_order")
 public class PledgeOrder extends Model<PledgeOrder> {
     private static final long serialVersionUID = 1L;
-
     /**
      * ID
      */
@@ -89,13 +88,13 @@ public class PledgeOrder extends Model<PledgeOrder> {
     /**
      * 小时利率
      */
-    @TableField("hr-rate")
+    @TableField("hr_rate")
     private BigDecimal hrRate;
 
     /**
      * 日利率
      */
-    @TableField("dayR_rate")
+    @TableField("day_rate")
     private BigDecimal dayRate;
 
     /**
@@ -141,9 +140,15 @@ public class PledgeOrder extends Model<PledgeOrder> {
     private Date expireTime;
 
     /**
+     * 到期时间
+     */
+    @TableField("update_time")
+    private Date updateTime;
+
+    /**
      * 0(计息中) 1（已结清）2（强平结算）
      */
-    @TableField("status")
+    @TableField("`status`")
     private Integer status;
 
 

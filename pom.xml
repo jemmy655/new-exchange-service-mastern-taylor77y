@@ -12,7 +12,6 @@
         <module>xa87-common-starter</module>
         <module>xa87-business</module>
         <module>xa87-gateway-zuul</module>
-        <module>xa87-business/xa87-pledge-loan-service</module>
     </modules>
 
     <packaging>pom</packaging>

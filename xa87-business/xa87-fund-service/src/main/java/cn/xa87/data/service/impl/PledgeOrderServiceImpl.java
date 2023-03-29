@@ -93,15 +93,16 @@ public class PledgeOrderServiceImpl extends ServiceImpl<PledgeOrderMapper, Pledg
         List<Map<String,Object>> list=new LinkedList<>();
         QueryWrapper<PledgeOrder> wrapperMain = new QueryWrapper<PledgeOrder>();
         wrapperMain.eq("member_id", userId);
-        wrapperMain.orderByDesc("create_time");
+        wrapperMain.orderByDesc("creation_time");
         List<PledgeOrder> fundOrders = this.baseMapper.selectList(wrapperMain);
         for (PledgeOrder f:fundOrders){
             Map<String,Object> map= JSON.parseObject(JSON.toJSONString(f), Map.class);
             QueryWrapper<PledgeOrderDetail> queryWrapper = new QueryWrapper<PledgeOrderDetail>();
-            wrapperMain.eq("order_id", f.getId());
-            wrapperMain.orderByDesc("create_time");
+            queryWrapper.eq("order_id", f.getId());
+            queryWrapper.orderByDesc("creation_time");
             List<PledgeOrderDetail> details=pledgeOrderDetailMapper.selectList(queryWrapper);
             map.put("details",details);
+            list.add(map);
         }
         return list;
     }
@@ -110,22 +111,22 @@ public class PledgeOrderServiceImpl extends ServiceImpl<PledgeOrderMapper, Pledg
     public Boolean setPledgeOrderBorrow(PledgeOrderVo pledgeOrderVo) {
         SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         PledgeOrder order=new PledgeOrder(
-          pledgeOrderVo.getMemberId(),
+          pledgeOrderVo.getMemberId(), //用户id
           OrderUtils.getCode(),
-          pledgeOrderVo.getBorrowMoney(),
-          pledgeOrderVo.getBorrowName(),
-          pledgeOrderVo.getPledgeMoney(),
-          pledgeOrderVo.getPledgeName(),
-          pledgeOrderVo.getDeadline(),
-          pledgeOrderVo.getForcePrice(),
-          pledgeOrderVo.getPledgeRate(),
-          pledgeOrderVo.getHrRate(),
-          pledgeOrderVo.getDayRate(),
-          new BigDecimal(0.002),
-          pledgeOrderVo.getTotalMoney(),
-          pledgeOrderVo.getTotalMoney(),
-          pledgeOrderVo.getPredictRefundMoney(),
-          pledgeOrderVo.getRefundPrice(),
+          pledgeOrderVo.getBorrowMoney(),// 借还金额
+          pledgeOrderVo.getBorrowName(),//借还币名称
+          pledgeOrderVo.getPledgeMoney(),//质押金额
+          pledgeOrderVo.getPledgeName(),//质押名称
+          pledgeOrderVo.getDeadline(),//周期
+          pledgeOrderVo.getForcePrice(),//强平金额
+          pledgeOrderVo.getPledgeRate(),//质押率
+          pledgeOrderVo.getHrRate(),//小时利率
+          pledgeOrderVo.getDayRate(),//一天利率
+          new BigDecimal(0.002),//
+          pledgeOrderVo.getTotalMoney(),//总利息
+          pledgeOrderVo.getBorrowMoney(),//总负债
+          pledgeOrderVo.getPredictRefundMoney(),//预计还款
+          new BigDecimal(0),//
           new Date(),
           DataUtils.addDays(sdf1.format(new Date()),"yyyy-MM-dd HH:mm:ss",pledgeOrderVo.getDeadline()),
           0
@@ -133,9 +134,9 @@ public class PledgeOrderServiceImpl extends ServiceImpl<PledgeOrderMapper, Pledg
         this.baseMapper.insert(order);
         saveDetail(order.getId(),order.getBorrowMoney(),order.getPledgeMoney(),order.getPledgeName(),"BORROW");
         //账户资金增加
-        openBalance(pledgeOrderVo.getBorrowName(),pledgeOrderVo.getMemberId(),pledgeOrderVo.getBorrowMoney());
+        updateBalance(pledgeOrderVo.getBorrowName(),pledgeOrderVo.getMemberId(),pledgeOrderVo.getBorrowMoney());
         //账户 质押资金减少
-        updateBalance(pledgeOrderVo.getPledgeName(),pledgeOrderVo.getMemberId(),pledgeOrderVo.getPledgeMoney());
+        openBalance(pledgeOrderVo.getPledgeName(),pledgeOrderVo.getMemberId(),pledgeOrderVo.getPledgeMoney());
         return true;
     }
 
@@ -148,6 +149,7 @@ public class PledgeOrderServiceImpl extends ServiceImpl<PledgeOrderMapper, Pledg
         detail.setPledgePrice(PMoney);
         detail.setPledgeName(PName);
         detail.setType(type);
+        pledgeOrderDetailMapper.insert(detail);
         return true;
     }
 
@@ -158,20 +160,36 @@ public class PledgeOrderServiceImpl extends ServiceImpl<PledgeOrderMapper, Pledg
         //（订单借贷 + 累计利息）/ 质押资产价值 * 100%  >= 75%  提醒补充质押资产
         BigDecimal rate=new BigDecimal(0.00);
         try {
-            rate=p.getBorrowMoney().subtract(p.getTotalIncurDebts()).add(p.getTotalMoney()).divide(nowPrice(p.getPledgeName()),5,BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(1));
+            rate=p.getBorrowMoney().subtract(pledgeOrderVo.getBorrowMoney()).add(p.getTotalMoney()).divide(nowPrice(p.getPledgeName()),5,BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(1));
         }catch(Exception e){
             System.out.println("计算出错了");
         }
         p.setPledgeRate(rate);
-        p.setPredictRefundMoney(new BigDecimal(0));
         p.setRefundPrice(p.getRefundPrice().add(pledgeOrderVo.getBorrowMoney()));
-        saveDetail(p.getId(),p.getBorrowMoney(),p.getPledgeMoney(),p.getPledgeName(),"REFUND");
+        saveDetail(p.getId(),pledgeOrderVo.getBorrowMoney(),p.getPledgeMoney(),p.getPledgeName(),"REFUND");
         if (p.getTotalIncurDebts().compareTo(new BigDecimal(0))==0){
             p.setStatus(1); //结清 btc 增加
-            updateBalance(pledgeOrderVo.getPledgeName(),pledgeOrderVo.getMemberId(),pledgeOrderVo.getPledgeMoney());
+            updateBalance(p.getPledgeName(),p.getMemberId(),p.getPledgeMoney());
         }
-        openBalance(pledgeOrderVo.getBorrowName(),pledgeOrderVo.getMemberId(),pledgeOrderVo.getBorrowMoney());
+        this.baseMapper.updateById(p);
+        openBalance(p.getBorrowName(),p.getMemberId(),pledgeOrderVo.getBorrowMoney());
         return true;
+    }
+
+    public PledgeOrderVo getLoanMoney2(BigDecimal loanCycle, String pledge_name, BigDecimal borrow_price, BigDecimal pledge_price) {
+        PledgeOrderVo vo=new PledgeOrderVo();
+        BigDecimal rate=new BigDecimal(0.00);
+        try {
+            rate=borrow_price.divide(nowPrice(pledge_name),5,BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(1));
+        }catch(Exception e){
+            System.out.println("计算出错了");
+        }
+        BigDecimal totalMoney=borrow_price.multiply(loanCycle.multiply(new BigDecimal(0.048))); //总利息
+        vo.setForcePrice(borrow_price);//强平价格
+        vo.setPledgeRate(rate); //质押率
+        vo.setTotalMoney(totalMoney); //总利息
+        vo.setPredictRefundMoney(borrow_price.add(totalMoney)); //预计还款
+        return vo;
     }
 
     @Override
@@ -185,16 +203,16 @@ public class PledgeOrderServiceImpl extends ServiceImpl<PledgeOrderMapper, Pledg
                 BigDecimal quantity=borrow_price.multiply(new BigDecimal(0.75));
                 throw new BusinessException("质押率过高，质押金额不得低于"+pledge_price.add(currency(pledge_name,quantity)));
             }
-            totalMoney=borrow_price.multiply(loanCycle.multiply(new BigDecimal(0.048)));
         }catch(Exception e){
             System.out.println("计算出错了");
         }
-        vo.setForcePrice(borrow_price);
+        totalMoney=borrow_price.multiply(loanCycle.multiply(new BigDecimal(0.048)));
+        vo.setForcePrice(borrow_price);//强平价格
         vo.setPledgeRate(rate); //质押率
         vo.setHrRate(new BigDecimal(0.002));
         vo.setDayRate(new BigDecimal(0.048));
-        vo.setTotalMoney(totalMoney);
-        vo.setPredictRefundMoney(borrow_price.add(totalMoney));
+        vo.setTotalMoney(totalMoney); //总利息
+        vo.setPredictRefundMoney(borrow_price.add(totalMoney)); //预计还款
         vo.setFeeMoney(new BigDecimal(0.002)); //强平手续费率
         return vo;
     }

@@ -41,9 +41,12 @@ public class PledgeOrderController {
     @ApiOperation("获取借款金额")
     @HeaderChecker(headerNames = {"token", "userId"})
     @GetMapping(value = "/getLoanAmount")
-    public Response getLoanMoney(@RequestParam String userId,@RequestParam String pledge_name,
-                                         @RequestParam BigDecimal borrow_Price,@RequestParam BigDecimal pledge_Price,@RequestParam BigDecimal loanCycle) {
-        return Response.success(pledgeOrderService.getLoanMoney(userId,loanCycle,pledge_name,borrow_Price,pledge_Price));
+    public Response getLoanMoney(@RequestParam String userId,
+                                 @RequestParam String pledgeName,
+                                 @RequestParam String borrowPrice,
+                                 @RequestParam String pledgePrice,
+                                 @RequestParam String loanCycle) {
+        return Response.success(pledgeOrderService.getLoanMoney(userId,new BigDecimal(loanCycle),pledgeName,new BigDecimal(borrowPrice),new BigDecimal(pledgePrice)));
     }
 
     @ApiOperation("获取订单列表")

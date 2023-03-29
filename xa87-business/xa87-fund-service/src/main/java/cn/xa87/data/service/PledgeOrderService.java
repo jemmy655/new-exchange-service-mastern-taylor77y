@@ -46,5 +46,5 @@ public interface PledgeOrderService extends IService<PledgeOrder> {
      * @param pledge_price  质押金额
      * @return
      */
-    PledgeOrderVo getLoanMoney(String userId, BigDecimal loanCycle, String pledge_name, BigDecimal borrow_price, BigDecimal pledge_price);
+    PledgeOrderVo getLoanMoney(String userId, BigDecimal loanCycle, String pledgeName, BigDecimal borrowPrice, BigDecimal pledgePrice);
 }

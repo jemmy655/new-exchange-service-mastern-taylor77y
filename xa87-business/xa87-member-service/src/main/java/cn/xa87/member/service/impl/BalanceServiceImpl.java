@@ -256,7 +256,18 @@ public class BalanceServiceImpl extends ServiceImpl<BalanceMapper, Balance> impl
         return diff / 60 / 1000;
     }
 
-
+    /**
+     *
+     * @param currency 币名称
+     * @param member    用户id
+     * @param wallet    提币地址
+     * @param balance   提币数量
+     * @param type      类型
+     * @param chainName 链子名称
+     * @param mccId
+     * @param baId       提币id
+     * @return
+     */
     @Override
     public Boolean extractCoin(String currency, String member, String wallet, BigDecimal balance,Integer type, String chainName, Integer mccId,Integer baId) {
         Member memberInfo = memberMapper.selectById(member);

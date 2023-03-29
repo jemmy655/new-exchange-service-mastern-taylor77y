@@ -57,8 +57,8 @@ public class BalanceController {
     @HeaderChecker(headerNames = {"token", "userId"})
     @PostMapping(value = "/extractCoin")
     @LogHeaderChecker
-    public Response extractCoin(String currency, @RequestParam String member, String wallet, @RequestParam BigDecimal balance, @RequestParam Integer type, String chainName, Integer mccId,Integer baId) {
-        return Response.success(balanceService.extractCoin(currency, member, wallet, balance,type,chainName,mccId,baId));
+    public Response extractCoin(String currency, @RequestParam String member, String wallet, @RequestParam String balance, @RequestParam Integer type, String chainName, Integer mccId,Integer baId) {
+        return Response.success(balanceService.extractCoin(currency, member, wallet, new BigDecimal(balance),type,chainName,mccId,baId));
     }
 
     @ApiOperation("查询资产列表")

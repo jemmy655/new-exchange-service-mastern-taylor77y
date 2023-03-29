@@ -36,7 +36,7 @@ public class PledgeOrderDetail extends Model<PledgeOrderDetail> {
     /**
      * 质押订单id
      */
-    @TableField("orderId")
+    @TableField("order_id")
     private String orderId;
 
     /**

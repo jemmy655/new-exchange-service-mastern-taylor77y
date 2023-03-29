@@ -83,7 +83,7 @@ public interface MemberService extends IService<Member> {
 
     Response updateBillingAddress(String member, Integer baId, String address);
 
-    Response getBillingAddressList(String member);
+    Response getBillingAddressList(String member, String [] currency);
 
     Response updateMember(String member, String nikeName, String avatarAddress);
 
