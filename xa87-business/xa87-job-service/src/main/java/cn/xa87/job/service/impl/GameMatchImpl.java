@@ -17,4 +17,9 @@ public class GameMatchImpl implements KlineJobService {
     public void synchKline() {
 
     }
+
+    @Override
+    public void trend() {
+
+    }
 }

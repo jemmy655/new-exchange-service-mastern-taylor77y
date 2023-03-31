@@ -17,6 +17,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -35,6 +36,7 @@ public class KlineServiceImpl implements KlineJobService {
     private PairsMapper pairsMapper;
     @Autowired
     private MatchProducer matchProducer;
+    private SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
 
     @Override
     public void ClearKline() {
@@ -118,60 +120,13 @@ public class KlineServiceImpl implements KlineJobService {
         // 查询所有交易对
         Map<String, BigDecimal> mainCurMap = new HashMap<String, BigDecimal>();
         mainCurMap.put("USDT", new BigDecimal("6.4704"));
-       /* try {
-            String period="1m";
-            List<String> mainCurs = pairsMapper.getMainCurs();
-            String sdate= new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-            String edate= new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-            for (String mainCur : mainCurs) {
-               // SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-                //SimpleDateFormat dfNow = new SimpleDateFormat("yyyyMMddHHmm00");// 设置日期格式
-                //long now = sdf.parse(dfNow.format(new Date())).getTime();
-                String pairsName = mainCur.replace("/USDT", "USD");
-                //String content = HttpUtil.doGet("https://data.block.cc/api/v3/kline?api_key=G1OZLXDGGXLWUABHHILY6IHYW4KMISX1XZMJAZTW&desc=gate-io_"+pairsName+"&interval="+period+"&start="+now);
-                String url="https://api.polygon.io/v2/aggs/ticker/X:"+pairsName+"/prev?unadjusted=true&apiKey=025JV3RuzkUZAiSjojXv37GWSRrp6kTK";
-                String content = HttpUtil.doGet(url);
-                if (content == null) {
-                    log.info("接口返回空");
-                    continue;
-                }
-                JSONObject json = JSONObject.parseObject(content);
-                if (json == null || json.get("results") == null) {
-                    log.info(url+ "查询无数据");
-                    continue;
-                }
-                JSONArray jsonArray = json.getJSONArray("results");
-                if (jsonArray.size() > 0) {
-                    JSONObject jsonInfo = JSONArray.parseObject(jsonArray.get(jsonArray.size() - 1).toString());
-                    JSONObject jsonRsult = new JSONObject();
-                    jsonRsult.put("volume", jsonInfo.get("v"));
-                    jsonRsult.put("high", jsonInfo.get("h"));
-                    jsonRsult.put("low", jsonInfo.get("l"));
-                    jsonRsult.put("time", jsonInfo.get("t"));
-                    jsonRsult.put("close", jsonInfo.get("c"));
-                    jsonRsult.put("open", jsonInfo.get("o"));
-                    if(!new BigDecimal(jsonInfo.get("c").toString()).equals(BigDecimal.ZERO)){
-                        mainCurMap.put(mainCur, new BigDecimal(jsonInfo.get("c").toString()));
-                    }
-
-                    redisRepository.set(CacheConstants.PRICE_HIG_LOW_KEY + mainCur, jsonRsult.toJSONString());
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }*/
         try {
             List<String> mainCurs = pairsMapper.getMainCurs();
             for (String mainCur : mainCurs) {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
                 SimpleDateFormat dfNow = new SimpleDateFormat("yyyyMMddHHmm00");// 设置日期格式
                 long now = sdf.parse(dfNow.format(new Date())).getTime();
-
-                //String content = HttpUtil.doGet("https://api.zb.com/data/v1/kline?market=" + mainCur.replace("/", "").toLowerCase() + "_QC" + "&type=1min&size=1&since=" + now);
                 String content = HttpUtil.doGet("https://api.zb.com/data/v1/kline?market=" + mainCur.replace("/", "").toLowerCase() + "_QC" + "&type=1min&size=1&since=" + now);
-
-
-
                 JSONObject json = JSONObject.parseObject(content);
                 if (json == null || json.get("data") == null) {
                     log.info("https://api.zb.com/data/v1/kline?market=" + mainCur.replace("/", "").toLowerCase() + "_QC" + "&type=1min&size=1&since=" + now + "查询无数据");
@@ -197,7 +152,7 @@ public class KlineServiceImpl implements KlineJobService {
         if (!mainCurMap.isEmpty()) {
             QueryWrapper<Pairs> wrapper = new QueryWrapper<Pairs>();
             wrapper.eq("state", CoinConstant.Coin_State.NORMAL);
-            wrapper.eq("pairs_type",1);
+            wrapper.eq("pairs_type", 1);
             List<Pairs> list = pairsMapper.selectList(wrapper);
 
             ExecutorService threadPool = Executors.newFixedThreadPool(5);
@@ -221,6 +176,7 @@ public class KlineServiceImpl implements KlineJobService {
         }
 
     }
+
 
     public void updatePairs(Pairs pairs, BigDecimal mainCurPrice) throws ParseException {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -283,7 +239,7 @@ public class KlineServiceImpl implements KlineJobService {
             } else {
                 nowPrice = pairs.getPrice();// 当前价
             }
-            if (nowPrice==null) {
+            if (nowPrice == null) {
                 return;
             }
             Map<String, BigDecimal> map = new HashMap<String, BigDecimal>();
@@ -328,20 +284,20 @@ public class KlineServiceImpl implements KlineJobService {
         @Override
         public void run() {
             try {
-                initkline("1m",pairs);
-                initkline("5m",pairs);
-                initkline("15m",pairs);
-                initkline("30m",pairs);
-                initkline("1d",pairs);
-                initkline("1w",pairs);
+                initkline("1m", pairs);
+                initkline("5m", pairs);
+                initkline("15m", pairs);
+                initkline("30m", pairs);
+                initkline("1d", pairs);
+                initkline("1w", pairs);
             } catch (Exception e) {
-               log.error("执行数据出现异常",e);
+                log.error("执行数据出现异常", e);
             }
         }
 
     }
 
-    public void initkline(String timeType,Pairs pairs){
+    public void initkline(String timeType, Pairs pairs) {
        /* String redisKey = CacheConstants.KLINE_KEY + timeType + CacheConstants.SPLIT + pairs.getPairsName();
         String pairsName = pairs.getPairsName().replace("/USDT", "USD");
         String sdate= new SimpleDateFormat("yyyy-MM-dd").format(new Date());
@@ -446,34 +402,34 @@ public class KlineServiceImpl implements KlineJobService {
         }*/
         String redisKey = CacheConstants.KLINE_KEY + timeType + CacheConstants.SPLIT + pairs.getPairsName();
         String pairsName = pairs.getPairsName().replace("/", "").toLowerCase();
-        String period="";
+        String period = "";
         switch (timeType) {
             case "1m":
-                period="1min";
+                period = "1min";
                 break;
             case "5m":
-                period="5min";
+                period = "5min";
                 break;
             case "15m":
-                period="15min";
+                period = "15min";
                 break;
             case "30m":
-                period="30min";
+                period = "30min";
                 break;
             case "1h":
-                period="60min";
+                period = "60min";
                 break;
             case "1d":
-                period="1day";
+                period = "1day";
                 break;
             case "1w":
-                period="1week";
+                period = "1week";
                 break;
             default:
                 break;
         }
 
-        String content = HttpUtil.doGet("https://api.huobi.pro/market/history/kline?symbol="+pairsName+"&period="+period+"&size=10");
+        String content = HttpUtil.doGet("https://api.huobi.pro/market/history/kline?symbol=" + pairsName + "&period=" + period + "&size=10");
 
 //        log.info(content);
 
@@ -488,9 +444,9 @@ public class KlineServiceImpl implements KlineJobService {
         }
         JSONArray jsonArray = json.getJSONArray("data");
         for (Object obj : jsonArray) {
-            JSONObject jsonInfo =JSONObject.parseObject(obj.toString());
+            JSONObject jsonInfo = JSONObject.parseObject(obj.toString());
             jsonInfo.put("volume", jsonInfo.get("amount"));
-            long time=Long.parseLong(jsonInfo.get("id")+"000");
+            long time = Long.parseLong(jsonInfo.get("id") + "000");
             jsonInfo.put("time", time);
             redisRepository.zsetRmByScore(redisKey, time);
             redisRepository.zsetAdd(redisKey, jsonInfo.toJSONString(), time);
@@ -504,23 +460,63 @@ public class KlineServiceImpl implements KlineJobService {
             t.setDaemon(true);
             return t;
         }
-    },new ThreadPoolExecutor.DiscardPolicy());
+    }, new ThreadPoolExecutor.DiscardPolicy());
 
     @Override
     public void synchKline() {
         getInitMatch match;
         QueryWrapper<Pairs> wrapper = new QueryWrapper<Pairs>();
         wrapper.eq("state", CoinConstant.Coin_State.NORMAL);
-        wrapper.ne("token_cur","USDT");
+        wrapper.ne("token_cur", "USDT");
         List<Pairs> list = pairsMapper.selectList(wrapper);
-        log.info("K线图抓取执行===》List--> {}",list.size());
-        for (Pairs p:list) {
-             match = new getInitMatch(p);
-             match.run();
+        log.info("K线图抓取执行===》List--> {}", list.size());
+        for (Pairs p : list) {
+            match = new getInitMatch(p);
+            match.run();
 //            es.submit(new getInitMatch(p));
         }
         es.shutdown();
     }
 
+    @Override
+    public void trend() {
+        QueryWrapper<Pairs> wrapper = new QueryWrapper<Pairs>();
+        wrapper.eq("state", CoinConstant.Coin_State.NORMAL);
+        wrapper.eq("pairs_type", 1);
+        List<Pairs> pairsList = pairsMapper.selectList(wrapper);
+        ExecutorService threadPool = Executors.newFixedThreadPool(5);
+        pairsList.forEach(item -> {
+            String res2 = HttpUtil.doGet("https://www.okx.com/priapi/v5/market/mult-tickers?t="+new Date().getTime()+"&instIds="+item.getTokenCur()+"-USDT");
+            if (res2!=null) {
+                JSONObject object = JSONObject.parseObject(res2);
+                data(item, object);
+            }
+        });
+        threadPool.shutdown();
+    }
+
+    @Async
+    public void data(Pairs pairs, JSONObject red) {
+
+        Map<String, BigDecimal> map = new HashMap<String, BigDecimal>();
+        map.put("higPrice", new BigDecimal(red.get("high24h").toString()));
+        map.put("lowPrice", new BigDecimal(red.get("low24h").toString()));
+        map.put("nowPrice", new BigDecimal(red.get("last").toString()));
+        map.put("updown", new BigDecimal(0));
+        map.put("volume", new BigDecimal(red.get("lastSz").toString()));
+        map.put("open", new BigDecimal(red.get("open24h").toString()));
+        map.put("chPrice", new BigDecimal(red.get("last").toString()).multiply(new BigDecimal("6.4704")));
+
+        redisRepository.set(CacheConstants.PRICE_HIG_LOW_KEY + pairs.getPairsName(), JSONObject.toJSONString(map));
+
+        pairs.setHigPrice(map.get("higPrice"));
+        pairs.setLowPrice(map.get("lowPrice"));
+        pairs.setPrice(map.get("nowPrice"));
+        pairs.setUpdown(map.get("updown"));
+        pairs.setVolume(map.get("volume"));
+        pairs.setOpen(map.get("open"));
+        pairs.setChPrice(map.get("chPrice"));
+        pairsMapper.updateById(pairs);
+    }
 
 }

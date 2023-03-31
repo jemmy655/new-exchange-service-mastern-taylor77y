@@ -160,7 +160,11 @@ public class PledgeOrderServiceImpl extends ServiceImpl<PledgeOrderMapper, Pledg
         //（订单借贷 + 累计利息）/ 质押资产价值 * 100%  >= 75%  提醒补充质押资产
         BigDecimal rate=new BigDecimal(0.00);
         try {
-            rate=p.getBorrowMoney().subtract(pledgeOrderVo.getBorrowMoney()).add(p.getTotalMoney()).divide(nowPrice(p.getPledgeName()),5,BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(1));
+            rate=p.getBorrowMoney()
+                    .subtract(pledgeOrderVo.getBorrowMoney())
+                    .add(p.getTotalMoney())
+                    .divide(pledgeOrderVo.getPledgeMoney().multiply(nowPrice(p.getPledgeName())),5,BigDecimal.ROUND_HALF_UP)
+                    .multiply(new BigDecimal(1));
         }catch(Exception e){
             System.out.println("计算出错了");
         }
@@ -176,29 +180,13 @@ public class PledgeOrderServiceImpl extends ServiceImpl<PledgeOrderMapper, Pledg
         return true;
     }
 
-    public PledgeOrderVo getLoanMoney2(BigDecimal loanCycle, String pledge_name, BigDecimal borrow_price, BigDecimal pledge_price) {
-        PledgeOrderVo vo=new PledgeOrderVo();
-        BigDecimal rate=new BigDecimal(0.00);
-        try {
-            rate=borrow_price.divide(nowPrice(pledge_name),5,BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(1));
-        }catch(Exception e){
-            System.out.println("计算出错了");
-        }
-        BigDecimal totalMoney=borrow_price.multiply(loanCycle.multiply(new BigDecimal(0.048))); //总利息
-        vo.setForcePrice(borrow_price);//强平价格
-        vo.setPledgeRate(rate); //质押率
-        vo.setTotalMoney(totalMoney); //总利息
-        vo.setPredictRefundMoney(borrow_price.add(totalMoney)); //预计还款
-        return vo;
-    }
-
     @Override
     public PledgeOrderVo getLoanMoney(String userId, BigDecimal loanCycle, String pledge_name, BigDecimal borrow_price, BigDecimal pledge_price) {
         PledgeOrderVo vo=new PledgeOrderVo();
         BigDecimal rate=new BigDecimal(0.00);
         BigDecimal totalMoney=new BigDecimal(0.00);
         try {
-            rate=borrow_price.divide(nowPrice(pledge_name),5,BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(1));
+            rate=borrow_price.divide(pledge_price.multiply(nowPrice(pledge_name)),5,BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(1));
             if (rate .compareTo(new BigDecimal(0.70))>=0){
                 BigDecimal quantity=borrow_price.multiply(new BigDecimal(0.75));
                 throw new BusinessException("质押率过高，质押金额不得低于"+pledge_price.add(currency(pledge_name,quantity)));

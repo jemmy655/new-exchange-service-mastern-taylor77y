@@ -53,9 +53,10 @@ public class ScheduledKlineJob {
      *
      * @return
      */
-    @Scheduled(cron = "*/5 * * * * ?")
+    @Scheduled(cron = "*/3 * * * * ?")
     public void priceJobHandler() {
-        klineJobService.cnyPrice();
+//        klineJobService.cnyPrice();
+        klineJobService.trend();
     }
 
 

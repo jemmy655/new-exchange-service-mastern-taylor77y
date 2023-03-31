@@ -5,4 +5,6 @@ public interface FundOrderService {
     void countSmartPoolYield();
 
     void PledgeOrderYield();
+
+    void countPledgeMoney();
 }

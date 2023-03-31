@@ -9,6 +9,7 @@ import cn.xa87.job.mapper.*;
 import cn.xa87.job.service.FundOrderService;
 import cn.xa87.model.*;
 import cn.xa87.vo.FundOrderVo;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 public class FundOrderServiceImpl implements FundOrderService {
@@ -35,6 +38,7 @@ public class FundOrderServiceImpl implements FundOrderService {
     private PledgeOrderMapper pledgeOrderMapper;
     @Autowired
     private BalanceRecordMapper balanceRecordMapper;
+
     @Autowired
     private BalanceMapper balanceMapper;
     @Autowired
@@ -80,6 +84,30 @@ public class FundOrderServiceImpl implements FundOrderService {
                 updateBalance(f.getPledgeName(),f.getMemberId(),f.getPledgeMoney());
             }
         }
+    }
+
+    @Override
+    public void countPledgeMoney() {
+        QueryWrapper<PledgeOrder> wrapperMain = new QueryWrapper<PledgeOrder>();
+        wrapperMain.eq("status", "0");
+        wrapperMain.orderByAsc("creation_time");
+        List<PledgeOrder> fundOrders=pledgeOrderMapper.selectList(wrapperMain);
+        ExecutorService threadPool = Executors.newFixedThreadPool(5);
+        for (PledgeOrder f:fundOrders) {
+            try {
+                BigDecimal rate=f.getTotalIncurDebts().add(f.getTotalMoney()).
+                        divide(f.getPledgeMoney().multiply(nowPrice(f.getPledgeName())),2,BigDecimal.ROUND_HALF_UP)
+                        .multiply(new BigDecimal(1));
+                f.setPledgeRate(rate);
+                if (rate.compareTo(new BigDecimal(0.85))>=0){
+                    f.setStatus(2);
+                }
+                pledgeOrderMapper.updateById(f);
+            }catch(Exception e){
+                System.out.println("计算出错了");
+            }
+        }
+        threadPool.shutdown();
     }
 
 
@@ -189,4 +217,18 @@ public class FundOrderServiceImpl implements FundOrderService {
         balanceRecord.setDataClassification(1);
         balanceRecordMapper.insert(balanceRecord);
     }
+
+    public BigDecimal nowPrice(String currencyTarget){
+        BigDecimal nowPrice = new BigDecimal("1");
+        // 目标币价格
+        if(!currencyTarget.equals("USDT")){
+            String resultTarget = redisRepository.get(CacheConstants.PRICE_HIG_LOW_KEY + currencyTarget.toUpperCase() + "/USDT");
+            if(null != resultTarget){
+                JSONObject jsonInfo = JSONObject.parseObject(resultTarget);
+                nowPrice = jsonInfo.getBigDecimal("nowPrice");
+            }
+        }
+        return nowPrice;
+    }
+
 }

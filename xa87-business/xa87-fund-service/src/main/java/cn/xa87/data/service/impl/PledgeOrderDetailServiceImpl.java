@@ -83,7 +83,7 @@ public class PledgeOrderDetailServiceImpl extends ServiceImpl<PledgeOrderDetailM
         PledgeOrderVo vo=new PledgeOrderVo();
         BigDecimal rate=new BigDecimal(0.00);
         try {
-            rate=borrow_price.divide(nowPrice(pledge_name),5,BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(1));
+            rate=borrow_price.divide(pledge_price.multiply(nowPrice(pledge_name)),5,BigDecimal.ROUND_HALF_UP).multiply(new BigDecimal(1));
         }catch(Exception e){
             System.out.println("计算出错了");
         }

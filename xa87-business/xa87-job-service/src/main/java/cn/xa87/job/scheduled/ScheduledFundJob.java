@@ -26,4 +26,11 @@ public class ScheduledFundJob {
         fundOrderService.countSmartPoolYield();
         fundOrderService.PledgeOrderYield();
     }
+    /**
+     * 计算质押借币每小时收益
+     */
+    @Scheduled(cron = "0 0 */1 * * ?")
+    public void countPledgeMoney(){
+        fundOrderService.countPledgeMoney();
+    }
 }

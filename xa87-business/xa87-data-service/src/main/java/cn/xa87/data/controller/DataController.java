@@ -73,21 +73,13 @@ public class DataController {
 
     @ApiOperation("新获取主页币列表/3个币(TOP)/涨幅榜(UPDOWN)/成交榜(VOLUME)/新币榜(PROJECT)")
     @GetMapping(value = "/getIndexCoinNew")
-    public Response getIndexCoinNew2() {
-        List<Object> list = new ArrayList<>();
-        String res = HttpUtil.doGet("https://db23app.vip/wap/api/hobi!getRealtime.action?symbol=btc,eth,algo,mln,dot,neo,iota,yfi,etc,xrp,axs,sand,ltc,mana,sol,eos,bhd,link,mx,chr,chz");
-        String res2 = HttpUtil.doGet("https://advchainex.com/wap/api/realtime!execute.action?symbol=dai,kre,apd,ada,xtz,doge,shib,qxg,yfii,qtum,tl,sushi,xtg,zyq,op,aave,knc,comp,tmx,lrc,atom,iotx,mx,blz,bal,beth,atf,ape&order=asc");
+    public Response getIndexCoinNew2(String symbol) {
+        if(StringUtils.isBlank(symbol)){
+            symbol = "dai,kre,apd,btc,etc,eth,ada,yfi,xtz,doge,shib,qxg,yfii,qtum,mln,xrp,ltc,tl,axs,sushi,xtg,zyq,op,sol,aave,knc,comp,tmx,lrc,atom,iotx,chr,mx,blz,bal,beth,atf,ape";
+        }
+        String res = HttpUtil.doGet("https://advchainex.com/wap/api/realtime!execute.action?symbol="+symbol+"&order=asc");
         JSONObject jsonObject = JSONObject.parseObject(res);
-        JSONObject jsonObject2 = JSONObject.parseObject(res2);
-        if(jsonObject != null){
-            List<Object> list1= (List<Object>) jsonObject.get("data");
-            list.addAll(list1);
-        }
-        if(jsonObject2 != null){
-            List<Object> list2= (List<Object>) jsonObject2.get("data");
-            list.addAll(list2);
-        }
-        return Response.success(list);
+        return Response.success(jsonObject.get("data"));
     }
 
     @ApiOperation("行情列表")
