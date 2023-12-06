@@ -92,7 +92,6 @@ public class FundOrderServiceImpl implements FundOrderService {
         wrapperMain.eq("status", "0");
         wrapperMain.orderByAsc("creation_time");
         List<PledgeOrder> fundOrders=pledgeOrderMapper.selectList(wrapperMain);
-        ExecutorService threadPool = Executors.newFixedThreadPool(5);
         for (PledgeOrder f:fundOrders) {
             try {
                 BigDecimal rate=f.getTotalIncurDebts().add(f.getTotalMoney()).
@@ -107,7 +106,6 @@ public class FundOrderServiceImpl implements FundOrderService {
                 System.out.println("计算出错了");
             }
         }
-        threadPool.shutdown();
     }
 
 

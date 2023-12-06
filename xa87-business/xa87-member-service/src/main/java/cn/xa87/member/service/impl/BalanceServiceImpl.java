@@ -413,6 +413,13 @@ public class BalanceServiceImpl extends ServiceImpl<BalanceMapper, Balance> impl
         }
     }
 
+    /**
+     *
+     * @param member
+     * @param currency
+     * @param coinType  ASSETS
+     * @return
+     */
     @Override
     public Map<String, Object> getBalanceList(String member, String currency, CoinConstant.Coin_Type coinType) {
         List<Balance> balances = balanceMapper.getBalanceList(member, currency, coinType.getCoinType());
@@ -429,9 +436,9 @@ public class BalanceServiceImpl extends ServiceImpl<BalanceMapper, Balance> impl
             BigDecimal sumAssetsBalance = balance.getAssetsBalance().add(balance.getAssetsBlockedBalance());
             BigDecimal sumAeleaseBalance = balance.getRaiseBalance();
 
-            BigDecimal chPrice = null;
-            BigDecimal price = null;
-            String result = redisRepository.get(CacheConstants.PRICE_HIG_LOW_KEY + balance.getCurrency().toUpperCase() + "/USDT");
+            BigDecimal chPrice = new BigDecimal(6.7364);
+            BigDecimal price = new BigDecimal(1);
+            /*String result = redisRepository.get(CacheConstants.PRICE_HIG_LOW_KEY + balance.getCurrency().toUpperCase() + "/USDT");
 
             if (result == null) {
                 result = redisRepository.get(CacheConstants.PRICE_HIG_LOW_KEY + balance.getCurrency().toUpperCase());
@@ -453,7 +460,7 @@ public class BalanceServiceImpl extends ServiceImpl<BalanceMapper, Balance> impl
                 JSONObject jsonInfo = JSONObject.parseObject(result);
                 chPrice = jsonInfo.getBigDecimal("chPrice");
                 price = jsonInfo.getBigDecimal("nowPrice");
-            }
+            }*/
             // 币币
 //            if (coinType.equals(CoinConstant.Coin_Type.SPOT) && sumBalance.compareTo(new BigDecimal("0")) == 1) {
 //                balance.setScaleBalanceUsdt(sumBalance.multiply(price));

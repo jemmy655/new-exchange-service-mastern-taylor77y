@@ -484,15 +484,18 @@ public class KlineServiceImpl implements KlineJobService {
         wrapper.eq("state", CoinConstant.Coin_State.NORMAL);
         wrapper.eq("pairs_type", 1);
         List<Pairs> pairsList = pairsMapper.selectList(wrapper);
-        ExecutorService threadPool = Executors.newFixedThreadPool(5);
         pairsList.forEach(item -> {
             String res2 = HttpUtil.doGet("https://www.okx.com/priapi/v5/market/mult-tickers?t="+new Date().getTime()+"&instIds="+item.getTokenCur()+"-USDT");
             if (res2!=null) {
+                System.out.println("请求的数据api"+"https://www.okx.com/priapi/v5/market/mult-tickers?t="+new Date().getTime()+"&instIds="+item.getTokenCur()+"-USDT");
+                System.out.println("请求的数据"+res2);
                 JSONObject object = JSONObject.parseObject(res2);
-                data(item, object);
+                List<JSONObject> list= (List<JSONObject>) object.get("data");
+                if (list.size()>0) {
+                    data(item, list.get(0));
+                }
             }
         });
-        threadPool.shutdown();
     }
 
     @Async

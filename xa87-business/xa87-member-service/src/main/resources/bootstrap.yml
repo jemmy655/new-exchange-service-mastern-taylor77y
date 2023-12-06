@@ -38,3 +38,6 @@ spring:
         file-extension: yml
         shared-dataids: application-${spring.profiles}.yml
         namespace: 8dfa2159-fda6-4be1-b649-58db1a473a0f
+
+test:
+  upload: /test/upload

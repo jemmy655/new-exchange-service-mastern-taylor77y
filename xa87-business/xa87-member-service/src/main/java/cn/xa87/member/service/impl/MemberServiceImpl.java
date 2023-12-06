@@ -597,42 +597,51 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
         if (members.size() > 0) {
             throw new BusinessException(AjaxResultEnum.THIS_ID_IS_ALREADY_REGISTERED.message());
         }
-        String host = "https://yxidcard.market.alicloudapi.com";
-        String path = "/idcard";
-        String method = "GET";
-        String appcode = "a4c7f986186f4a5cb795507ef1764c9e";
-        Map<String, String> headers = new HashMap<String, String>();
-        headers.put("Authorization", "APPCODE " + appcode);
-        Map<String, String> querys = new HashMap<String, String>();
-        querys.put("idcard", cardNo);
-        querys.put("realname", name);
-        try {
-            HttpResponse response = HttpUtils.doGet(host, path, method, headers, querys);
-            String result = EntityUtils.toString(response.getEntity());
-            JSONObject json = JSONObject.parseObject(result);
-            if (json.getString("code").equals("200")) {
-                JSONObject jsonData = json.getJSONObject("data");
-                String birth = jsonData.getString("birth");
-                String sex = jsonData.getString("sex");
-                String addr = jsonData.getString("addr");
-                Member member = memberMapper.selectById(memberId);
-                member.setAddress(addr);
-                member.setSex(sex);
-                member.setBirth(birth);
-                member.setCardNo(cardNo);
-                member.setUname(name);
-                member.setAreaCode(areaCode);
-                member.setPositiveLink(positiveLink);
-                member.setSideLink(sideLink);
-                member.setHandLink(handLink);
-                memberMapper.updateById(member);
-            } else {
-                throw new BusinessException(AjaxResultEnum.NAME_DOES_NOT_MATCH_ID_NUMBER.message());
-            }
-        } catch (Exception e) {
-            throw new BusinessException(AjaxResultEnum.NAME_DOES_NOT_MATCH_ID_NUMBER.message());
-        }
+        Member member = memberMapper.selectById(memberId);
+        member.setCardNo(cardNo);
+        member.setUname(name);
+        member.setAreaCode(areaCode);
+        member.setPositiveLink(positiveLink);
+        member.setSideLink(sideLink);
+        member.setHandLink(handLink);
+        memberMapper.updateById(member);
         return true;
+//        String host = "https://yxidcard.market.alicloudapi.com";
+//        String path = "/idcard";
+//        String method = "GET";
+//        String appcode = "a4c7f986186f4a5cb795507ef1764c9e";
+//        Map<String, String> headers = new HashMap<String, String>();
+//        headers.put("Authorization", "APPCODE " + appcode);
+//        Map<String, String> querys = new HashMap<String, String>();
+//        querys.put("idcard", cardNo);
+//        querys.put("realname", name);
+//        try {
+//            HttpResponse response = HttpUtils.doGet(host, path, method, headers, querys);
+//            String result = EntityUtils.toString(response.getEntity());
+//            JSONObject json = JSONObject.parseObject(result);
+//            if (json.getString("code").equals("200")) {
+//                JSONObject jsonData = json.getJSONObject("data");
+//                String birth = jsonData.getString("birth");
+//                String sex = jsonData.getString("sex");
+//                String addr = jsonData.getString("addr");
+//                Member member = memberMapper.selectById(memberId);
+//                member.setAddress(addr);
+//                member.setSex(sex);
+//                member.setBirth(birth);
+//                member.setCardNo(cardNo);
+//                member.setUname(name);
+//                member.setAreaCode(areaCode);
+//                member.setPositiveLink(positiveLink);
+//                member.setSideLink(sideLink);
+//                member.setHandLink(handLink);
+//                memberMapper.updateById(member);
+//            } else {
+//                throw new BusinessException(AjaxResultEnum.NAME_DOES_NOT_MATCH_ID_NUMBER.message());
+//            }
+//        } catch (Exception e) {
+//            throw new BusinessException(AjaxResultEnum.NAME_DOES_NOT_MATCH_ID_NUMBER.message());
+//        }
+//        return true;
     }
 
     @Override

@@ -40,7 +40,7 @@
         <springfox.version>2.9.2</springfox.version>
         <httpclient.version>4.5.5</httpclient.version>
         <mybatis-plus.version>3.0.7.1</mybatis-plus.version>
-        <mysql.version>5.1.21</mysql.version>
+        <mysql.version>5.1.46</mysql.version>
         <fastjson.version>1.2.50</fastjson.version>
         <zxing.version>3.2.0</zxing.version>
         <pinyin4j.version>2.5.1</pinyin4j.version>
