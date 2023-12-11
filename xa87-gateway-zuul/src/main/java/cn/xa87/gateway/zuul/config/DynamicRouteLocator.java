@@ -158,6 +158,16 @@ public class DynamicRouteLocator extends DiscoveryClientRouteLocator {
         sysRoute5.setDelFlag("0");
         sysRoute5.setStripPrefix("1");
         list.add(sysRoute5);
+
+        SysRoute sysRoute6 = new SysRoute();
+        sysRoute6.setServiceId("xa87-fund-service");
+        sysRoute6.setPath("/fund/**");
+        sysRoute6.setRetryable("1");
+        sysRoute6.setEnabled("1");
+        sysRoute6.setDelFlag("0");
+        sysRoute6.setStripPrefix("1");
+        list.add(sysRoute6);
+
         redisRepository.set(CacheConstants.ROUTE_KEY, JSONObject.toJSONString(list));
 
     }

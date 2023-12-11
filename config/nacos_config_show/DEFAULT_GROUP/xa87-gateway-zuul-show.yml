@@ -20,7 +20,7 @@ zuul:
   ignored-services: '*'
   # 需要聚合的swagger服务
   swagger:
-    serviceIds: xa87-data-service,xa87-member-service,xa87-contract-service,xa87-entrust-service,xa87-otc-service
+    serviceIds: xa87-data-service,xa87-member-service,xa87-contract-service,xa87-entrust-service,xa87-otc-service,xa87-fund-service
   FormBodyWrapperFilter: 
     pre:
       disable: false
