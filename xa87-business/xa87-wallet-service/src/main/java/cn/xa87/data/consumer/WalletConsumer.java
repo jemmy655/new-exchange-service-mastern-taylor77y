@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 @Slf4j
-@Component
-@RabbitListener(queues = {RabbitConstants.WALLET_QUEUE_PUT})
-@Service
+//@Component
+//@RabbitListener(queues = {RabbitConstants.WALLET_QUEUE_PUT})
+//@Service
 public class WalletConsumer {
 
     @Autowired
