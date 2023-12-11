@@ -30,7 +30,7 @@ import java.util.UUID;
 @Slf4j
 public class FileUploadController {
 
-    @Value("${test.upload}")
+    @Value("${test.upload:/Users/robin/evernote/test/upload}")
     private String uploadPath;
 
     @ApiOperation(",实名认证")

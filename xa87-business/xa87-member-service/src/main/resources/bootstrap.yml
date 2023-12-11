@@ -40,4 +40,4 @@ spring:
         namespace: 8dfa2159-fda6-4be1-b649-58db1a473a0f
 
 test:
-  upload: /test/upload
+  upload: /Users/robin/evernote/test/upload
